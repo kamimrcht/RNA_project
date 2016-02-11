@@ -8,8 +8,8 @@
 using namespace std;
 
 struct window{
-	int index;
-	int read;
+	uint index;
+	uint read;
 
     bool operator==(const window& a) const
 	{
@@ -85,7 +85,7 @@ string getKmer(const string& sequence, int posi, int k){
 }
 
 
-void setKmersToWindows(int indexRead, int indexWindow, string kmer, const unordered_map<string, int>& solidKmers, unordered_map <string, vector <window>>& kmerToWindows){
+void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector <window>>& kmerToWindows){
 	if (solidKmers.count(kmer)){
 		window win({indexWindow, indexRead});
 		if (kmerToWindows.count(kmer)){
@@ -100,23 +100,23 @@ void setKmersToWindows(int indexRead, int indexWindow, string kmer, const unorde
 }
 
 
-void getKmersinWindowsFromReads(int k, int w, const vector <string>& readSet, const unordered_map<string, int>& solidKmers, unordered_map <string, vector<window>>& kmerToWindows){
+void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector<window>>& kmerToWindows){
 	for (uint indexRead(0); indexRead < readSet.size(); ++ indexRead){
 		string readSequence(readSet[indexRead]);
 		if (not readSequence.empty()) {
 			int position(0);
-			int posiForKmer;
+			uint posiForKmer;
 			string kmer;
-			int indexWindow(0);
+			uint indexWindow(0);
 			while (position != -1){
-				if (position + w + k - 1 < (int)readSequence.size()){
+				if (position + w + k - 1 < readSequence.size()){
 					posiForKmer = position;
 					position += w;
 				} else {
 					posiForKmer = readSequence.size() - w - k + 1;
 					position = -1;
 				}
-				for (int iter(posiForKmer); iter < posiForKmer + w; ++iter){
+				for (uint iter(posiForKmer); iter < posiForKmer + w; ++iter){
 					kmer = getKmer(readSequence, iter, k);
 					setKmersToWindows(indexRead, indexWindow, kmer, solidKmers, kmerToWindows);
 				}
@@ -133,14 +133,14 @@ void getKmersinWindowsFromReads(int k, int w, const vector <string>& readSet, co
 }
 
 
-void getKmersinFromReadsInMap(int k, const vector <string>& readSet, unordered_map <string, int>& kmersFromFile){
+void getKmersinFromReadsInMap(uint k, const vector <string>& readSet, unordered_map <string, uint>& kmersFromFile){
 	for (uint readIndex(0); readIndex < readSet.size(); ++ readIndex){
 		string readSequence(readSet[readIndex]);
 		if (not readSequence.empty()){
-			int position(0);
+			uint position(0);
 			string kmer;
 			
-			while (position + k - 1 < (int)readSequence.size()){
+			while (position + k - 1 < readSequence.size()){
 				kmer = getKmer(readSequence, position, k);
 				if (kmersFromFile.count(kmer)){
 					++kmersFromFile[kmer];
@@ -154,8 +154,8 @@ void getKmersinFromReadsInMap(int k, const vector <string>& readSet, unordered_m
 }
 
 
-void getSolidKmers(const unordered_map<string, int>& kmersFromFile, unordered_map<string, int>& solidKmers){
-	 for ( unordered_map<string, int>::const_iterator iter = kmersFromFile.begin(); iter != kmersFromFile.end(); ++iter ){
+void getSolidKmers(const unordered_map<string, uint>& kmersFromFile, unordered_map<string, uint>& solidKmers){
+	 for (auto iter = kmersFromFile.begin(); iter != kmersFromFile.end(); ++iter ){
 		if (iter->second > 1){
 			solidKmers[iter->first] = iter->second;
 		} 
@@ -163,29 +163,30 @@ void getSolidKmers(const unordered_map<string, int>& kmersFromFile, unordered_ma
 }
 
 
-void compareReadWindows(int k, int w, const vector<string>& readSet,const unordered_map<string, int> solidKmers, const unordered_map<string, vector<window>> kmerToWindows){
+void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows){
 	for (uint indexRead(0); indexRead < readSet.size(); ++ indexRead){
 		string readSequence(readSet[indexRead]);
 		if (not readSequence.empty()){
-			int position(0), posiForKmer(0);
+			int position(0);
+			uint posiForKmer(0);
 			uint indexWindow(0);
 			while (position != -1){
 				uint nbKmers(0);
 				unordered_map<window, double> similarity;
-				if (position + w + k - 1 <(int) readSequence.size()){
+				if (position + w + k - 1 < readSequence.size()){
 					posiForKmer = position;
 					position += w;
 				} else {
 					posiForKmer = readSequence.size() - w - k + 1;
 					position = -1;
 				}
-				for (int iter(posiForKmer); iter < posiForKmer + w; ++iter){
+				for (uint iter(posiForKmer); iter < posiForKmer + w; ++iter){
 					string kmer = getKmer(readSequence, iter, k);
 					if (solidKmers.count(kmer)){
 						++ nbKmers;
 						for (auto iter = kmerToWindows.begin(); iter != kmerToWindows.end(); ++iter ){
 							for (uint i(0); i<iter->second.size(); ++i){
-								if (iter->second[i].read != (int)indexRead){
+								if (iter->second[i].read != indexRead){
 									if (kmer == iter->first){
 										if (similarity.count(iter->second[i])){
 											++similarity[iter->second[i]];
@@ -232,8 +233,8 @@ int main(int argc, char ** argv){
 			getline(readFile, sequence);
 			readSet.push_back(sequence);
 		}
-		unordered_map <string, int> kmersFromFile; //  TODO: destroy
-		unordered_map <string, int> solidKmers;
+		unordered_map <string, uint> kmersFromFile; //  TODO: destroy
+		unordered_map <string, uint> solidKmers;
 		unordered_map <string, vector<window>> kmerToWindows;
 		getKmersinFromReadsInMap(k, readSet, kmersFromFile);
 		getSolidKmers(kmersFromFile, solidKmers);
