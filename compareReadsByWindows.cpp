@@ -5,38 +5,9 @@
 #include <unordered_map>
 #include <algorithm>
 #include "compareReadsByWindows.h"
+#include "utils.h"
 
 using namespace std;
-
-//~ struct window{
-	//~ uint index;
-	//~ uint read;
-
-    //~ bool operator==(const window& a) const
-	//~ {
-		//~ return (index == a.index && read == a.read);
-	//~ }
-//~ };
-
-
-//~ uint64_t transformWindowToHash(window win){
-	//~ hash<int> winHash;
-	//~ return winHash(win.read + win.index);
-//~ }
-
-
-//~ namespace std { template <> struct hash<window> {
-	//~ typedef window argument_type;
-	//~ typedef uint64_t result_type; uint64_t operator()(window key) const { return transformWindowToHash(key); } }; }
-
-
-//~ struct compareWindow{
-    //~ bool operator()(const window& win1, const window& win2){
-        //~ return win1.index <win2.index;
-    //~ }
-//~ };
-
-
 
 uint64_t transformWindowToHash(window win){
 	hash<int> winHash;
@@ -55,41 +26,41 @@ vector<window> removeDuplicates(const vector<window>& vect){
 }
 
 
-string revComp(const string& seq){
-	string revCompSeq = "";
-	int pos = seq.size()-1;
-	char nt;
-	do{
-		nt = seq[pos];
-		switch (nt) {
-			case 'A':
-				revCompSeq += 'T';
-				break;
-			case 'T':
-				revCompSeq += 'A';
-				break;
-			case 'C':
-				revCompSeq += 'G';
-				break;
-			case 'G':
-				revCompSeq += 'C';
-				break;
-		}
-		--pos;
-	} while (pos>=0);
-	return revCompSeq;
-}
+//~ string revComp(const string& seq){
+	//~ string revCompSeq = "";
+	//~ int pos = seq.size()-1;
+	//~ char nt;
+	//~ do{
+		//~ nt = seq[pos];
+		//~ switch (nt) {
+			//~ case 'A':
+				//~ revCompSeq += 'T';
+				//~ break;
+			//~ case 'T':
+				//~ revCompSeq += 'A';
+				//~ break;
+			//~ case 'C':
+				//~ revCompSeq += 'G';
+				//~ break;
+			//~ case 'G':
+				//~ revCompSeq += 'C';
+				//~ break;
+		//~ }
+		//~ --pos;
+	//~ } while (pos>=0);
+	//~ return revCompSeq;
+//~ }
 
 
-string getCanonical(const string& seq){
-	string revCompSeq = revComp(seq);
-	return min(seq, revCompSeq); 
-}
+//~ string getCanonical(const string& seq){
+	//~ string revCompSeq = revComp(seq);
+	//~ return min(seq, revCompSeq); 
+//~ }
 
 
-string getKmer(const string& sequence, int posi, int k){
-	return getCanonical(sequence.substr(posi, k));
-}
+//~ string getKmer(const string& sequence, int posi, int k){
+	//~ return getCanonical(sequence.substr(posi, k));
+//~ }
 
 
 void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector <window>>& kmerToWindows){

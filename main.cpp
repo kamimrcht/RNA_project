@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "compareReadsByWindows.h"
+#include "utils.h"
 
 using namespace std;
 

@@ -32,9 +32,9 @@ namespace std { template <> struct hash<window> {
 
 
 vector<window> removeDuplicates(const vector<window>& vect);
-string revComp(const string& seq);
-string getCanonical(const string& seq);
-string getKmer(const string& sequence, int posi, int k);
+//~ string revComp(const string& seq);
+//~ string getCanonical(const string& seq);
+//~ string getKmer(const string& sequence, int posi, int k);
 void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector <window>>& kmerToWindows);
 
 void getKmersinFromReadsInMap(uint k, const vector <string>& readSet, unordered_map <string, uint>& kmersFromFile);
