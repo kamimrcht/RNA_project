@@ -19,10 +19,13 @@ EXEC=rnaLR
 
 all: $(EXEC)
 
-rnaLR:   main.o  
+rnaLR:   main.o compareReadsByWindows.o  
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-main.o: main.cpp  
+compareReadsByWindows.o:	compareReadsByWindows.cpp compareReadsByWindows.h
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+main.o: main.cpp  compareReadsByWindows.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
