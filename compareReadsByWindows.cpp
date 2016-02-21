@@ -26,43 +26,6 @@ vector<window> removeDuplicates(const vector<window>& vect){
 }
 
 
-//~ string revComp(const string& seq){
-	//~ string revCompSeq = "";
-	//~ int pos = seq.size()-1;
-	//~ char nt;
-	//~ do{
-		//~ nt = seq[pos];
-		//~ switch (nt) {
-			//~ case 'A':
-				//~ revCompSeq += 'T';
-				//~ break;
-			//~ case 'T':
-				//~ revCompSeq += 'A';
-				//~ break;
-			//~ case 'C':
-				//~ revCompSeq += 'G';
-				//~ break;
-			//~ case 'G':
-				//~ revCompSeq += 'C';
-				//~ break;
-		//~ }
-		//~ --pos;
-	//~ } while (pos>=0);
-	//~ return revCompSeq;
-//~ }
-
-
-//~ string getCanonical(const string& seq){
-	//~ string revCompSeq = revComp(seq);
-	//~ return min(seq, revCompSeq); 
-//~ }
-
-
-//~ string getKmer(const string& sequence, int posi, int k){
-	//~ return getCanonical(sequence.substr(posi, k));
-//~ }
-
-
 void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector <window>>& kmerToWindows){
 	if (solidKmers.count(kmer)){
 		window win({indexWindow, indexRead});
@@ -81,11 +44,10 @@ void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unor
 
 void getKmersinFromReadsInMap(uint k, const vector <string>& readSet, unordered_map <string, uint>& kmersFromFile){
 	for (uint readIndex(0); readIndex < readSet.size(); ++ readIndex){
-		string readSequence(readSet[readIndex]);
+		string readSequence(getCanonical(readSet[readIndex]));
 		if (not readSequence.empty()){
 			uint position(0);
 			string kmer;
-			
 			while (position + k - 1 < readSequence.size()){
 				kmer = getKmer(readSequence, position, k);
 				if (kmersFromFile.count(kmer)){
@@ -111,7 +73,7 @@ void getSolidKmers(const unordered_map<string, uint>& kmersFromFile, unordered_m
 
 void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector<window>>& kmerToWindows){
 	for (uint indexRead(0); indexRead < readSet.size(); ++ indexRead){
-		string readSequence(readSet[indexRead]);
+		string readSequence(getCanonical(readSet[indexRead]));
 		if (not readSequence.empty()) {
 			int position(0);
 			uint posiForKmer;
@@ -131,12 +93,6 @@ void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, 
 				}
 				++indexWindow;
 			}
-			//~ for (auto iter = kmerToWindows.begin(); iter != kmerToWindows.end(); ++iter ){
-				//~ cout << iter->first << endl;
-				//~ for (uint i(0); i <iter->second.size();++i){
-					//~ cout << "index:"<<iter->second[i].index <<  " read:" <<iter->second[i].read << endl;
-				//~ }
-			//~ }
 		}
 	}
 }
@@ -144,13 +100,13 @@ void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, 
 
 
 void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows){
-	for (uint indexRead(0); indexRead < readSet.size(); ++ indexRead){
-		string readSequence(readSet[indexRead]);
+	for (uint indexReadTarget(0); indexReadTarget < readSet.size(); ++ indexReadTarget){
+		string readSequence(getCanonical(readSet[indexReadTarget]));
 		if (not readSequence.empty()){
 			int position(0);
 			uint posiForKmer(0);
-			uint indexWindow(0);
-			while (position != -1){
+			uint indexWindowTarget(0);
+			while (position != -1){ // for each window in target read
 				uint nbKmers(0);
 				unordered_map<window, double> similarity;
 				if (position + w + k - 1 < readSequence.size()){
@@ -160,18 +116,22 @@ void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unor
 					posiForKmer = readSequence.size() - w - k + 1;
 					position = -1;
 				}
-				for (uint iter(posiForKmer); iter < posiForKmer + w; ++iter){
+				for (uint iter(posiForKmer); iter < posiForKmer + w; ++iter){ // for each kmer in target window
 					string kmer = getKmer(readSequence, iter, k);
 					if (solidKmers.count(kmer)){
 						++ nbKmers;
 						for (auto iter = kmerToWindows.begin(); iter != kmerToWindows.end(); ++iter ){
 							for (uint i(0); i<iter->second.size(); ++i){
-								if (iter->second[i].read != indexRead){
-									if (kmer == iter->first){
-										if (similarity.count(iter->second[i])){
+								if (iter->second[i].read != indexReadTarget){
+									if (similarity.count(iter->second[i])){
+										if (kmer == iter->first){
 											++similarity[iter->second[i]];
-										} else {
+										}
+									} else {
+										if (kmer == iter->first){
 											similarity[iter->second[i]] = 1;
+										} else {
+											similarity[iter->second[i]] = 0;
 										}
 									}
 								}
@@ -179,18 +139,21 @@ void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unor
 						}
 					}
 				}
+				//~ if (similarity.empty(){
+					
+				//~ }
 				for (uint rIndex(0); rIndex<readSet.size();++rIndex){  // to order the output in cout
-					//~ cout << rIndex << endl;
 					for (auto iter = similarity.begin(); iter != similarity.end(); ++iter ){
 						if (iter->first.read == rIndex){  // to order the output in cout
 							iter->second /= nbKmers;
-							if (iter->second >= 0.7){
-								cout << "reads:" << iter->first.read << " " << indexRead << " windows:" << iter->first.index << " " << indexWindow <<  " score:" << iter->second <<endl;
-							}
+							//~ if (iter->second >= 0.7){
+								//~ cout << "reads:" << iter->first.read << " " << indexReadTarget << " windows:" << iter->first.index << " " << indexWindowTarget <<  " score:" << iter->second <<endl;
+								cout << indexWindowTarget << " " << iter->first.index << " " << iter->second <<endl;
+							//~ })
 						}
 					}
 				}
-				++indexWindow;
+				++indexWindowTarget;
 			}
 		}
 		break; // REMOVE IF all v all
