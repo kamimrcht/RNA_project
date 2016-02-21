@@ -42,3 +42,29 @@ string getCanonical(const string& seq){
 string getKmer(const string& sequence, int posi, int k){
 	return getCanonical(sequence.substr(posi, k));
 }
+
+
+string getSequenceInWindow(const string & readSequence, uint w, uint k, uint indexWin){
+	uint position(indexWin*w);
+	string region;
+	if (position + k - 1 < readSequence.size()){
+		region = readSequence.substr(position, w);
+	} else {
+		uint posi= readSequence.size() - w - k + 1;
+		region = readSequence.substr(posi);
+	}
+	return region;
+}
+
+
+string getSequenceInConsecutiveWindows(const string & readSequence, uint w, uint k, uint firstIndexWin, uint lastIndexWin){
+	string region;
+	for (uint index(firstIndexWin); index <= lastIndexWin; ++index){
+		region += getSequenceInWindow(readSequence, w, k, index);
+	}
+	return region;
+}
+
+uint absolute(int a){
+	return  a >= 0 ? a : -a;
+}

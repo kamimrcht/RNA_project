@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "compareReadsByWindows.h"
 #include "utils.h"
+#include "detectJumps.h"
 
 using namespace std;
 
@@ -139,19 +140,22 @@ void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unor
 						}
 					}
 				}
-				//~ if (similarity.empty(){
-					
-				//~ }
+				vector <pairOfIndexWindow> pairsVec;
 				for (uint rIndex(0); rIndex<readSet.size();++rIndex){  // to order the output in cout
 					for (auto iter = similarity.begin(); iter != similarity.end(); ++iter ){
 						if (iter->first.read == rIndex){  // to order the output in cout
 							iter->second /= nbKmers;
-							//~ if (iter->second >= 0.7){
-								//~ cout << "reads:" << iter->first.read << " " << indexReadTarget << " windows:" << iter->first.index << " " << indexWindowTarget <<  " score:" << iter->second <<endl;
-								cout << indexWindowTarget << " " << iter->first.index << " " << iter->second <<endl;
-							//~ })
+								//~ cout << indexWindowTarget << " " << iter->first.index << " " << iter->second <<endl;
+								 //~ detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint indexReadQ, unordered_map <regionInRead, vector<regionInRead>>& correspondance)
+								 pairOfIndexWindow pair({indexWindowTarget, iter->first.index});
+								 pairsVec.push_back(pair);
+								 //~ cout << pair.target << " " << pair.query << endl;
 						}
 					}
+				}
+				sort(pairsVec.begin(), pairsVec.end(), comparePairOfIndexWindow());
+				for (uint i(0); i < pairsVec.size(); ++i){
+					cout << pairsVec[i].target << " " << pairsVec[i].query << endl;
 				}
 				++indexWindowTarget;
 			}
