@@ -25,7 +25,7 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 		//~ cout << vec[i].target << " " << vec[i].query << endl;
 		regionInRead regionTarget({indexT, vec[i].target, indexReadT});
 		if (i != vec.size()-1 and absolute(int(vec[i].target)-int(vec[i+1].target))>2){
-			cout << "jump" << endl;
+			//~ cout << "jump" << endl;
 			//~ if (correspondance.count(regionTarget)){
 				//~ correspondance[regionTarget].push_back({indexQ, vec[i].query, indexReadQ});
 			//~ } else {
@@ -34,11 +34,11 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 				//~ v.push_back(r);
 				//~ correspondance[regionTarget] = v;
 			//~ }
-			//~ cout << "jump in target" << indexT << "to" << vec[i+1].target << endl;
+			cout << "jump in target" << indexT << "to" << vec[i+1].target << endl;
 			indexT = vec[i+1].target;
 			indexQ = vec[i+1].query;
 		} else if (i != vec.size()-1 and absolute(int(vec[i].query)-int(vec[i+1].query))>2){
-			cout << "jump" << endl;
+			//~ cout << "jump" << endl;
 			//~ if (correspondance.count(regionTarget)){
 				//~ correspondance[regionTarget].push_back({indexQ, vec[i].query, indexReadQ});
 			//~ } else {
@@ -47,7 +47,7 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 				//~ v.push_back(r);
 				//~ correspondance[regionTarget] = v;
 			//~ }
-			//~ cout << "jump in query" << indexQ <<  "to" << vec[i+1].query <<  endl;
+			cout << "jump in query" << indexQ <<  "to" << vec[i+1].query <<  endl;
 			indexT = vec[i+1].target;
 			indexQ = vec[i+1].query;
 		}
