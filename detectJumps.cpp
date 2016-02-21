@@ -22,7 +22,7 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 	uint indexT(0);
 	uint indexQ(0);
 	for (uint i(0); i<vec.size(); ++i){
-		cout << vec[i].target << " " << vec[i].query << endl;
+		//~ cout << vec[i].target << " " << vec[i].query << endl;
 		regionInRead regionTarget({indexT, vec[i].target, indexReadT});
 		if (i != vec.size()-1 and absolute(int(vec[i].target)-int(vec[i+1].target))>2){
 			cout << "jump" << endl;

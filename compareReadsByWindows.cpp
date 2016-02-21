@@ -102,6 +102,8 @@ void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, 
 
 void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows){
 	for (uint indexReadTarget(0); indexReadTarget < readSet.size(); ++ indexReadTarget){
+		unordered_map <regionInRead, vector<regionInRead>> correspondance;
+		unordered_map <uint, vector <pairOfIndexWindow>> pairsOfaRead;
 		string readSequence(getCanonical(readSet[indexReadTarget]));
 		if (not readSequence.empty()){
 			int position(0);
@@ -140,24 +142,62 @@ void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unor
 						}
 					}
 				}
-				vector <pairOfIndexWindow> pairsVec;
+				//~ vector <pairOfIndexWindow> pairsVec;
+				//~ unordered_map <uint, vector <pairOfIndexWindow>> pairsOfaRead;
 				for (uint rIndex(0); rIndex<readSet.size();++rIndex){  // to order the output in cout
+					//~ vector <pairOfIndexWindow> pairsVec;
 					for (auto iter = similarity.begin(); iter != similarity.end(); ++iter ){
 						if (iter->first.read == rIndex){  // to order the output in cout
 							iter->second /= nbKmers;
 								//~ cout << indexWindowTarget << " " << iter->first.index << " " << iter->second <<endl;
-								 //~ detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint indexReadQ, unordered_map <regionInRead, vector<regionInRead>>& correspondance)
-								 pairOfIndexWindow pair({indexWindowTarget, iter->first.index});
-								 pairsVec.push_back(pair);
+								if (iter->second > 0.7){
+									pairOfIndexWindow pair({indexWindowTarget, iter->first.index});
+									if (pairsOfaRead.count(rIndex)){
+										pairsOfaRead[rIndex].push_back(pair);
+									} else {
+										vector <pairOfIndexWindow> vec;
+										vec.push_back(pair);
+										pairsOfaRead[rIndex] = vec;
+									}
+									
+								}
 								 //~ cout << pair.target << " " << pair.query << endl;
 						}
 					}
+					//~ for (auto iter = pairsOfaRead.begin(); iter != pairsOfaRead.end(); ++iter){
+						//~ if (not iter->second.empty()){
+							//~ cout << iter->first << endl;
+							//~ sort(iter->second.begin(), iter->second.end(), comparePairOfIndexWindow());
+							//~ for (uint i(0); i < iter->second.size(); ++i){
+								//~ cout << iter->second[i].target << " " << iter->second[i].query << endl;
+							//~ }
+						//~ }
+					//~ }
+
+					
+					//~ if (not pairsVec.empty()){
+						//~ cout << rIndex << endl;
+						//~ sort(pairsVec.begin(), pairsVec.end(), comparePairOfIndexWindow());
+						//~ detectJumps(pairsVec, indexReadTarget, rIndex, correspondance);
+						//~ for (uint i(0); i < pairsVec.size(); ++i){
+							//~ cout << pairsVec[i].target << " " << pairsVec[i].query << endl;
+						//~ }
+					//~ }
 				}
-				sort(pairsVec.begin(), pairsVec.end(), comparePairOfIndexWindow());
-				for (uint i(0); i < pairsVec.size(); ++i){
-					cout << pairsVec[i].target << " " << pairsVec[i].query << endl;
-				}
+				//~ sort(pairsVec.begin(), pairsVec.end(), comparePairOfIndexWindow());
+				//~ detectJumps(pairsVec, indexReadTarget, indexReadQ, unordered_map <regionInRead, vector<regionInRead>>& correspondance)
+				
 				++indexWindowTarget;
+			}
+			for (auto iter = pairsOfaRead.begin(); iter != pairsOfaRead.end(); ++iter){
+				if (not iter->second.empty()){
+					cout << iter->first << endl;
+					sort(iter->second.begin(), iter->second.end(), comparePairOfIndexWindow());
+					detectJumps(iter->second, indexReadTarget, iter->first, correspondance);
+					for (uint i(0); i < iter->second.size(); ++i){
+						cout << iter->second[i].target << " " << iter->second[i].query << endl;
+					}
+				}
 			}
 		}
 		break; // REMOVE IF all v all
