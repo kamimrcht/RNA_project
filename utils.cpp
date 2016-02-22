@@ -70,33 +70,51 @@ uint absolute(int a){
 }
 
 
-void setSequenceInWindow(const string & readSequence, const string& replacementSeq, string& newSeq, uint w, uint k, uint indexWin){
-	uint position(indexWin*w);
-	string region;
-	if (replacementSeq.size() == readSequence.size()){
-		newSeq = replacementSeq;
-	}
-	//~ else {
-		//~ uint countReplace(0);
-		//~ if (position + k - 1 < readSequence.size()){
-			//~ for (uint i(position); i< position + w; ++i){
-				//~ readSequence[i] = replacementSeq[countReplace];
-				//~ ++countReplace;
-			//~ }
-		//~ } else {
-			//~ uint posi= readSequence.size() - w - k + 1;
-			//~ for (uint i(posi); i< readSequence.size(); ++i){
-				//~ readSequence[i] = replacementSeq[countReplace];
-				//~ ++countReplace;
-			//~ }
-		//~ }
-	//~ }
-}
-
-
 void correctConsecutiveWindows(const string & readSequence, const string& replacementSeq, string& newSeq, uint w, uint k, uint firstIndexWin, uint lastIndexWin){
 	string region;
-	for (uint index(firstIndexWin); index <= lastIndexWin; ++index){
-		setSequenceInWindow(readSequence, replacementSeq, newSeq, w, k, index);
+	if (replacementSeq.size() == readSequence.size()){ //  case 1: the whole sequence is replaced
+		newSeq = replacementSeq;
+		cout << "case 1" << endl;
+	} else if (firstIndexWin == 0){ // case 2: the beginning is replaced
+		newSeq += replacementSeq;
+		newSeq += readSequence.substr((lastIndexWin+1)*w);
+		
+		cout << "case 2 " << replacementSeq.size() << " " <<readSequence.size() << endl;
+	}
+	else {
+		uint span(0);
+		bool lastWindowIncluded(false);
+		if (w * lastIndexWin + w == readSequence.size()){
+			lastWindowIncluded = true;
+			span = w * firstIndexWin;
+		} else {
+			if (not (w * (lastIndexWin + 1) + (w + k -1)> readSequence.size())){
+				lastWindowIncluded = true;
+				if (firstIndexWin == lastIndexWin) {
+					span = readSequence.size() - w - k + 2;
+				} else {
+					span =  w * firstIndexWin;
+				}
+			} else if (w * lastIndexWin + w > readSequence.size()){
+				lastWindowIncluded = true;
+				cout << "span in case 4 "<<lastIndexWin *w<< endl;
+				span = w * firstIndexWin;
+			}
+		}
+		//~ cout << firstIndexWin << " " << lastIndexWin << endl;
+		//~ cout << "w * lastIndexWin + w" << w * lastIndexWin + w << endl;
+		//~ cout << "w * (lastIndexWin+1) + (w + k -1))" << w * (lastIndexWin +1) + (w + k -1) << endl;
+		//~ cout << "readSequence.size()" << readSequence.size() << endl;
+		//~ cout << "bool" << lastWindowIncluded << endl;
+		if (not lastWindowIncluded){ // case 3: some region in the middle is replaced
+			cout << "case 3" << endl;
+			newSeq += readSequence.substr(0, firstIndexWin*w);
+			newSeq += replacementSeq;
+			newSeq += readSequence.substr((lastIndexWin+1)*w);
+		} else { // case 4 : the end of the sequence is replaced
+			cout <<  " case 4" << " " << span << endl;
+			newSeq += readSequence.substr(0, span);
+			newSeq += replacementSeq;
+		}
 	}
 }

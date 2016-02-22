@@ -14,5 +14,4 @@ string getKmer(const string& sequence, int posi, int k);
 string getSequenceInWindow(const string & readSequence, uint w, uint k, uint indexWin);
 string getSequenceInConsecutiveWindows(const string & readSequence, uint w, uint k, uint firstIndexWin, uint lastIndexWin);
 uint absolute(int a);
-void setSequenceInWindow(string & readSequence, const string& replacementSeq, uint w, uint k, uint indexWin);
-void correctConsecutiveWindows(string & readSequence, const string& replacementSeq, uint w, uint k, uint firstIndexWin, uint lastIndexWin);
+void correctConsecutiveWindows(const string & readSequence, const string& replacementSeq, string& newSeq, uint w, uint k, uint firstIndexWin, uint lastIndexWin);

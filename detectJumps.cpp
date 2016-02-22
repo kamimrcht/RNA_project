@@ -70,13 +70,6 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 }
 
 
-//~ void correctRegion(const string& consensus, const regionInRead& region, string& sequence, uint w, uint k){
-	//~ uint firstIndexWin(region.firstWindow);
-	//~ uint lastIndexWin(region.lastWindow);
-	//~ setSequenceInConsecutiveWindows(sequence, consensus, w, k, firstIndexWin, lastIndexWin);
-//~ }
-
-
 void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInRead>>& correspondance,const vector<string>& readSet, uint w, uint k){
 	for (auto iter = correspondance.begin(); iter != correspondance.end(); ++iter){
 		if (iter->second.size()>1){
@@ -99,6 +92,9 @@ void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInR
 			//~ correctRegion(consensus, iter->second, readSet2[iter->first.read], w, k);
 			string newSeq;
 			correctConsecutiveWindows(targetSequence, consensus, newSeq, w, k, iter->first.firstWindow, iter->first.lastWindow);
+			cout << "former " << targetSequence << endl;
+			cout << "new " << newSeq << endl;
+			cout << "SIZES" << targetSequence.size() << " " << newSeq.size() << endl;
 		}
 	}
 }
