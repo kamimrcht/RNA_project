@@ -69,12 +69,12 @@ void correctConsecutiveWindows(string & readSequence, const string& replacementS
 	if (replacementSeq.size() == readSequence.size()){ //  case 1: the whole sequence is replaced
 		//~ newSeq = replacementSeq;
 		readSequence = replacementSeq;
-		cout << "case 1" << endl;
+		//~ cout << "case 1" << endl;
 	} else if (firstIndexWin == 0){ // case 2: the beginning is replaced
 		newSeq = replacementSeq;
 		newSeq += readSequence.substr((lastIndexWin+1)*w);
 		readSequence = newSeq;
-		cout << "case 2 " << endl;
+		//~ cout << "case 2 " << endl;
 	}
 	else {
 		uint span(0);
@@ -96,13 +96,13 @@ void correctConsecutiveWindows(string & readSequence, const string& replacementS
 			}
 		}
 		if (not lastWindowIncluded){ // case 3: some region in the middle is replaced
-			cout << "case 3" << endl;
+			//~ cout << "case 3" << endl;
 			newSeq = readSequence.substr(0, firstIndexWin*w);
 			newSeq += replacementSeq;
 			newSeq += readSequence.substr((lastIndexWin+1)*w);
 			readSequence = newSeq;
 		} else { // case 4 : the end of the sequence is replaced
-			cout <<  " case 4" << endl;
+			//~ cout <<  " case 4" << endl;
 			newSeq = readSequence.substr(0, span);
 			newSeq += replacementSeq;
 			readSequence = newSeq;

@@ -77,10 +77,10 @@ void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInR
 			setColumnsOfNt(readRegionSeqs, targetRegion, nucl);
 			string consensus(ntToString(nucl));
 			//~ string newSeq;
-			cout << "former " << targetSequence << endl;
+			//~ cout << "former " << targetSequence << endl;
 			correctConsecutiveWindows(readSet[iter->first.read], consensus, w, k, iter->first.firstWindow, iter->first.lastWindow);
-			cout << "new " << readSet[iter->first.read] << endl;
-			cout << "SIZES" << targetSequence.size() << " " << readSet[iter->first.read].size() << endl;
+			//~ cout << "new " << readSet[iter->first.read] << endl;
+			//~ cout << "SIZES" << targetSequence.size() << " " << readSet[iter->first.read].size() << endl;
 		}
 	}
 }

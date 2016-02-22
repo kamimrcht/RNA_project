@@ -169,13 +169,13 @@ void compareReadWindows(uint k, uint w, vector<string>& readSet,const unordered_
 					detectJumps(iter->second, indexReadTarget, iter->first, correspondance);
 				}
 			}
-			for (auto iter=correspondance.begin(); iter!=correspondance.end(); ++iter){
-				for (uint i(0); i < iter->second.size(); ++i){
-					cout << iter->first.firstWindow  <<  " " << iter->first.lastWindow << " : " << iter->second[i].firstWindow << " " << iter->second[i].lastWindow << endl;
-				}
-			}
+			//~ for (auto iter=correspondance.begin(); iter!=correspondance.end(); ++iter){
+				//~ for (uint i(0); i < iter->second.size(); ++i){
+					//~ cout << iter->first.firstWindow  <<  " " << iter->first.lastWindow << " : " << iter->second[i].firstWindow << " " << iter->second[i].lastWindow << endl;
+				//~ }
+			//~ }
 			consensusBetweenRegions(correspondance, readSet, w, k);
 		}
-		break; // REMOVE IF all v all
+		//~ break; // REMOVE IF all v all
 	}
 }
