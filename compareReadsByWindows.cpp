@@ -44,7 +44,8 @@ void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unor
 
 void getKmersinFromReadsInMap(uint k, const vector <string>& readSet, unordered_map <string, uint>& kmersFromFile){
 	for (uint readIndex(0); readIndex < readSet.size(); ++ readIndex){
-		string readSequence(getCanonical(readSet[readIndex]));
+		//~ string readSequence(getCanonical(readSet[readIndex]));
+		string readSequence(readSet[readIndex]);
 		if (not readSequence.empty()){
 			uint position(0);
 			string kmer;
@@ -73,7 +74,8 @@ void getSolidKmers(const unordered_map<string, uint>& kmersFromFile, unordered_m
 
 void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector<window>>& kmerToWindows){
 	for (uint indexRead(0); indexRead < readSet.size(); ++ indexRead){
-		string readSequence(getCanonical(readSet[indexRead]));
+		//~ string readSequence(getCanonical(readSet[indexRead]));
+		string readSequence(readSet[indexRead]);
 		if (not readSequence.empty()) {
 			int position(0);
 			uint posiForKmer;
@@ -99,11 +101,12 @@ void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, 
 
 
 
-void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows){
+void compareReadWindows(uint k, uint w, vector<string>& readSet,const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows){
 	for (uint indexReadTarget(0); indexReadTarget < readSet.size(); ++ indexReadTarget){
 		unordered_map <regionInRead, vector<regionInRead>> correspondance;
 		unordered_map <uint, vector <pairOfIndexWindow>> pairsOfaRead;
-		string readSequence(getCanonical(readSet[indexReadTarget]));
+		string readSequence(readSet[indexReadTarget]);
+		//~ string readSequence(getCanonical(readSet[indexReadTarget]));
 		if (not readSequence.empty()){
 			int position(0);
 			uint posiForKmer(0);
@@ -163,11 +166,6 @@ void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unor
 			for (auto iter = pairsOfaRead.begin(); iter != pairsOfaRead.end(); ++iter){
 				if (not iter->second.empty()){
 					sort(iter->second.begin(), iter->second.end(), comparePairOfIndexWindow());
-					//~ cout << iter->first << endl;
-					//~ for (uint i(0); i<iter->second.size(); ++i){
-						//~ cout << iter->second[i].target << " " << iter->second[i].query << endl;
-					//~ }
-					//~ cout << "******" << endl;
 					detectJumps(iter->second, indexReadTarget, iter->first, correspondance);
 				}
 			}

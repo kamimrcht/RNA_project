@@ -26,15 +26,12 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 		if (i != vec.size()-1 and absolute(int(vec[i].target)-int(vec[i+1].target))>2){
 			if (correspondance.count(regionTarget)){
 				correspondance[regionTarget].push_back({indexQ, vec[i].query, indexReadQ});
-				//~ cout << "correspondance " << indexT << " " << vec[i].target << " : "<< indexQ << vec[i].query << endl; 
 			} else {
 				regionInRead r({indexQ, vec[i].query, indexReadQ});
 				vector <regionInRead> v;
 				v.push_back(r);
 				correspondance[regionTarget] = v;
-				//~ cout << "correspondance " << indexT << " " << vec[i].target << " : "<< indexQ << " " << vec[i].query << endl; 
 			}
-			//~ cout << "jump in target: " << vec[i].target << " to " << vec[i+1].target << endl;
 			indexT = vec[i+1].target;
 			indexQ = vec[i+1].query;
 		}
@@ -46,35 +43,29 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 				vector <regionInRead> v;
 				v.push_back(r);
 				correspondance[regionTarget] = v;
-				//~ cout << "correspondance " << indexT << " " << vec[i].target << " : "<< indexQ << " " << vec[i].query << endl; 
 			}
-			//~ cout << "jump in query: " << vec[i].query <<  " to " << vec[i+1].query <<  endl;
 			indexT = vec[i+1].target;
 			indexQ = vec[i+1].query;
 		}
 	}
 	regionInRead regionTarget({indexT, vec.back().target, indexReadT});
-	//~ if (indexT == 0 and indexQ == 0){
-		//~ cout << "no jump" << endl;
-	//~ }
 	if (correspondance.count(regionTarget)){
 		correspondance[regionTarget].push_back({indexQ, vec.back().query, indexReadQ});
-		//~ cout << "correspondance " << indexT << " " << vec.back().target << " : "<< indexQ << vec.back().query << endl; 
 	} else {
 		regionInRead r({indexQ, vec.back().query, indexReadQ});
 		vector <regionInRead> v;
 		v.push_back(r);
-		correspondance[regionTarget] = v;
-		//~ cout << "correspondance " << indexT << " " << vec.back().target << " : "<< indexQ << " " << vec.back().query << endl; 
+		correspondance[regionTarget] = v; 
 	}
 }
 
 
-void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInRead>>& correspondance,const vector<string>& readSet, uint w, uint k){
+void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInRead>>& correspondance, vector<string>& readSet, uint w, uint k){
 	for (auto iter = correspondance.begin(); iter != correspondance.end(); ++iter){
 		if (iter->second.size()>1){
 			vector <string> readRegionSeqs;
-			string targetSequence(getCanonical(readSet[iter->first.read]));
+			//~ string targetSequence(getCanonical(readSet[iter->first.read]));
+			string targetSequence(readSet[iter->first.read]);
 			string targetRegion(getSequenceInConsecutiveWindows(targetSequence, w, k, iter->first.firstWindow, iter->first.lastWindow));
 			for (uint i(0); i < iter->second.size(); ++i){
 				string seq(getSequenceInConsecutiveWindows(readSet[iter->second[i].read], w, k, iter->second[i].firstWindow, iter->second[i].lastWindow));
@@ -85,16 +76,11 @@ void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInR
 			vector <nucleotide> nucl;
 			setColumnsOfNt(readRegionSeqs, targetRegion, nucl);
 			string consensus(ntToString(nucl));
-			cout << iter->first.firstWindow << " " << iter->first.lastWindow << endl;
-			cout << "target " <<targetRegion << endl;
-			cout << "consensus " <<consensus << endl;
-			//~ vector <string> readSet2 = readSet;
-			//~ correctRegion(consensus, iter->second, readSet2[iter->first.read], w, k);
-			string newSeq;
-			correctConsecutiveWindows(targetSequence, consensus, newSeq, w, k, iter->first.firstWindow, iter->first.lastWindow);
+			//~ string newSeq;
 			cout << "former " << targetSequence << endl;
-			cout << "new " << newSeq << endl;
-			cout << "SIZES" << targetSequence.size() << " " << newSeq.size() << endl;
+			correctConsecutiveWindows(readSet[iter->first.read], consensus, w, k, iter->first.firstWindow, iter->first.lastWindow);
+			cout << "new " << readSet[iter->first.read] << endl;
+			cout << "SIZES" << targetSequence.size() << " " << readSet[iter->first.read].size() << endl;
 		}
 	}
 }

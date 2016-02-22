@@ -20,3 +20,4 @@ void setColumnsOfNt(const vector<string>& regionSet, string& targetRegion, vecto
 nucleotide sumForColumn(vector <char> columnNt);
 nucleotide compareNtByScore(const nucleotide& nt1, const nucleotide& nt2);
 string ntToString(const vector <nucleotide>& vec);
+void correctConsecutiveWindows(string & readSequence, const string& replacementSeq, uint w, uint k, uint firstIndexWin, uint lastIndexWin);

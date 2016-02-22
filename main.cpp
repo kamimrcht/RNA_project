@@ -23,7 +23,7 @@ int main(int argc, char ** argv){
 		while (not readFile.eof()){
             getline(readFile, sequence);
 			getline(readFile, sequence);
-			readSet.push_back(sequence);
+			readSet.push_back(getCanonical(sequence));
 		}
 		unordered_map <string, uint> kmersFromFile; //  TODO: destroy
 		unordered_map <string, uint> solidKmers;
