@@ -68,3 +68,35 @@ string getSequenceInConsecutiveWindows(const string & readSequence, uint w, uint
 uint absolute(int a){
 	return  a >= 0 ? a : -a;
 }
+
+
+void setSequenceInWindow(const string & readSequence, const string& replacementSeq, string& newSeq, uint w, uint k, uint indexWin){
+	uint position(indexWin*w);
+	string region;
+	if (replacementSeq.size() == readSequence.size()){
+		newSeq = replacementSeq;
+	}
+	//~ else {
+		//~ uint countReplace(0);
+		//~ if (position + k - 1 < readSequence.size()){
+			//~ for (uint i(position); i< position + w; ++i){
+				//~ readSequence[i] = replacementSeq[countReplace];
+				//~ ++countReplace;
+			//~ }
+		//~ } else {
+			//~ uint posi= readSequence.size() - w - k + 1;
+			//~ for (uint i(posi); i< readSequence.size(); ++i){
+				//~ readSequence[i] = replacementSeq[countReplace];
+				//~ ++countReplace;
+			//~ }
+		//~ }
+	//~ }
+}
+
+
+void correctConsecutiveWindows(const string & readSequence, const string& replacementSeq, string& newSeq, uint w, uint k, uint firstIndexWin, uint lastIndexWin){
+	string region;
+	for (uint index(firstIndexWin); index <= lastIndexWin; ++index){
+		setSequenceInWindow(readSequence, replacementSeq, newSeq, w, k, index);
+	}
+}
