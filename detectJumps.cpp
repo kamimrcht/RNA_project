@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "detectJumps.h"
 #include "utils.h"
-
+#include "consensus.h"
 
 
 using namespace std;
@@ -37,7 +37,8 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 			//~ cout << "jump in target: " << vec[i].target << " to " << vec[i+1].target << endl;
 			indexT = vec[i+1].target;
 			indexQ = vec[i+1].query;
-		} else if (i != vec.size()-1 and absolute(int(vec[i].query)-int(vec[i+1].query))>2){
+		}
+		if (i != vec.size()-1 and absolute(int(vec[i].query)-int(vec[i+1].query))>2){
 			if (correspondance.count(regionTarget)){
 				correspondance[regionTarget].push_back({indexQ, vec[i].query, indexReadQ});
 			} else {
@@ -45,6 +46,7 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 				vector <regionInRead> v;
 				v.push_back(r);
 				correspondance[regionTarget] = v;
+				//~ cout << "correspondance " << indexT << " " << vec[i].target << " : "<< indexQ << " " << vec[i].query << endl; 
 			}
 			//~ cout << "jump in query: " << vec[i].query <<  " to " << vec[i+1].query <<  endl;
 			indexT = vec[i+1].target;
@@ -64,5 +66,27 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 		v.push_back(r);
 		correspondance[regionTarget] = v;
 		//~ cout << "correspondance " << indexT << " " << vec.back().target << " : "<< indexQ << " " << vec.back().query << endl; 
+	}
+}
+
+
+void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInRead>>& correspondance, const vector<string>& readSet, uint w, uint k){
+	for (auto iter = correspondance.begin(); iter != correspondance.end(); ++iter){
+		if (iter->second.size()>1){
+			vector <string> readRegionSeqs;
+			string targetRegion(getSequenceInConsecutiveWindows(readSet[iter->first.read], w, k, iter->first.firstWindow, iter->first.lastWindow));
+			for (uint i(0); i < iter->second.size(); ++i){
+				string seq(getSequenceInConsecutiveWindows(readSet[iter->second[i].read], w, k, iter->second[i].firstWindow, iter->second[i].lastWindow));
+				if (seq.size() == targetRegion.size()){
+					readRegionSeqs.push_back(seq);
+				}
+			}
+			vector <nucleotide> nucl;
+			setColumnsOfNt(readRegionSeqs, targetRegion, nucl);
+			string consensus(ntToString(nucl));
+			cout << iter->first.firstWindow << " " << iter->first.lastWindow << endl;
+			cout << "target " <<targetRegion << endl;
+			cout << "consensus " <<consensus << endl;
+		}
 	}
 }

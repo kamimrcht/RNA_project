@@ -43,3 +43,4 @@ namespace std { template <> struct hash<regionInRead> {
 
 void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint indexReadQ, unordered_map <regionInRead, vector<regionInRead>>& correspondance);
 void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInRead>>& correspondance, const vector<string>& readSet, uint w, uint k);
+void consensusBetweenRegions(const unordered_map <regionInRead, vector<regionInRead>>& correspondance, const vector<string>& readSet, uint w, uint k);

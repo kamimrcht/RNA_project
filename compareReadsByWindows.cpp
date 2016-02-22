@@ -42,7 +42,6 @@ void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unor
 }
 
 
-
 void getKmersinFromReadsInMap(uint k, const vector <string>& readSet, unordered_map <string, uint>& kmersFromFile){
 	for (uint readIndex(0); readIndex < readSet.size(); ++ readIndex){
 		string readSequence(getCanonical(readSet[readIndex]));
@@ -164,8 +163,12 @@ void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unor
 			for (auto iter = pairsOfaRead.begin(); iter != pairsOfaRead.end(); ++iter){
 				if (not iter->second.empty()){
 					sort(iter->second.begin(), iter->second.end(), comparePairOfIndexWindow());
+					//~ cout << iter->first << endl;
+					//~ for (uint i(0); i<iter->second.size(); ++i){
+						//~ cout << iter->second[i].target << " " << iter->second[i].query << endl;
+					//~ }
+					//~ cout << "******" << endl;
 					detectJumps(iter->second, indexReadTarget, iter->first, correspondance);
-
 				}
 			}
 			for (auto iter=correspondance.begin(); iter!=correspondance.end(); ++iter){
@@ -173,6 +176,7 @@ void compareReadWindows(uint k, uint w, const vector<string>& readSet,const unor
 					cout << iter->first.firstWindow  <<  " " << iter->first.lastWindow << " : " << iter->second[i].firstWindow << " " << iter->second[i].lastWindow << endl;
 				}
 			}
+			consensusBetweenRegions(correspondance, readSet, w, k);
 		}
 		break; // REMOVE IF all v all
 	}

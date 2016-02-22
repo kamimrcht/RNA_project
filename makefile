@@ -19,16 +19,19 @@ EXEC=rnaLR
 
 all: $(EXEC)
 
-rnaLR:   main.o compareReadsByWindows.o	utils.o	detectJumps.o
+rnaLR:   main.o compareReadsByWindows.o	utils.o	detectJumps.o consensus.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 utils.o:	utils.cpp
 	$(CC) -o $@ -c $< $(CFLAGS)
 
+consensus.o:	consensus.cpp
+	$(CC) -o $@ -c $< $(CFLAGS)
+
 compareReadsByWindows.o:	compareReadsByWindows.cpp compareReadsByWindows.h utils.h	detectJumps.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-detectJumps.o:	detectJumps.cpp detectJumps.h utils.h
+detectJumps.o:	detectJumps.cpp detectJumps.h utils.h consensus.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 main.o: main.cpp  compareReadsByWindows.h utils.h
