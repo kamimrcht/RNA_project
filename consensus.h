@@ -5,6 +5,9 @@
 #include <unordered_map>
 #include <algorithm>
 
+#ifndef CONSENSUS
+#define CONSENSUS
+
 using namespace std;
 
 struct nucleotide{
@@ -21,3 +24,5 @@ nucleotide sumForColumn(vector <char> columnNt);
 nucleotide compareNtByScore(const nucleotide& nt1, const nucleotide& nt2);
 string ntToString(const vector <nucleotide>& vec);
 void correctConsecutiveWindows(string & readSequence, const string& replacementSeq, uint w, uint k, uint firstIndexWin, uint lastIndexWin);
+
+#endif

@@ -22,8 +22,9 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 	uint indexT(0);
 	uint indexQ(0);
 	for (uint i(0); i<vec.size(); ++i){
+		// todo : refactor
 		regionInRead regionTarget({indexT, vec[i].target, indexReadT});
-		if (i != vec.size()-1 and absolute(int(vec[i].target)-int(vec[i+1].target))>2){
+		if (i != vec.size()-1 and absolute(int(vec[i].target)-int(vec[i+1].target))>2){  // jump in target
 			if (correspondance.count(regionTarget)){
 				correspondance[regionTarget].push_back({indexQ, vec[i].query, indexReadQ});
 			} else {
@@ -35,7 +36,7 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 			indexT = vec[i+1].target;
 			indexQ = vec[i+1].query;
 		}
-		if (i != vec.size()-1 and absolute(int(vec[i].query)-int(vec[i+1].query))>2){
+		if (i != vec.size()-1 and absolute(int(vec[i].query)-int(vec[i+1].query))>2){ // jump in query
 			if (correspondance.count(regionTarget)){
 				correspondance[regionTarget].push_back({indexQ, vec[i].query, indexReadQ});
 			} else {
@@ -48,7 +49,7 @@ void detectJumps(const vector<pairOfIndexWindow>& vec, uint indexReadT, uint ind
 			indexQ = vec[i+1].query;
 		}
 	}
-	regionInRead regionTarget({indexT, vec.back().target, indexReadT});
+	regionInRead regionTarget({indexT, vec.back().target, indexReadT}); //  last region
 	if (correspondance.count(regionTarget)){
 		correspondance[regionTarget].push_back({indexQ, vec.back().query, indexReadQ});
 	} else {

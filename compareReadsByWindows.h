@@ -4,6 +4,10 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include "detectJumps.h"
+
+#ifndef COMPARE_READS
+#define COMPARE_READS
 
 using namespace std;
 
@@ -33,11 +37,14 @@ namespace std { template <> struct hash<window> {
 
 vector<window> removeDuplicates(const vector<window>& vect);
 void setKmersToWindows(uint indexRead, uint indexWindow, string kmer, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector <window>>& kmerToWindows);
-
+void getStartKmerEnum(int& position, uint& startForKmer, uint sizeSeq, uint k, uint w);
 void getKmersinFromReadsInMap(uint k, const vector <string>& readSet, unordered_map <string, uint>& kmersFromFile);
 void getKmersinWindowsFromReads(uint k, uint w, const vector <string>& readSet, const unordered_map<string, uint>& solidKmers, unordered_map <string, vector<window>>& kmerToWindows);
 void getKmersinFromReadsInMap(uint k, const vector <string>& readSet, unordered_map <string, uint>& kmersFromFile);
-
+uint getSimilarity(uint posiForKmer, uint& nbKmers, uint indexReadTarget, const string& readSequence, const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows, unordered_map<window, double>& similarity, uint k, uint w);
 void getSolidKmers(const unordered_map<string, uint>& kmersFromFile, unordered_map<string, uint>& solidKmers);
-void compareReadWindows(uint k, uint w, vector<string>& readSet,const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows);
+void getSimilarWindowsPairs(uint readSetSize, uint indexWindowTarget, unordered_map<window, double>& similarity, uint nbKmers, unordered_map <uint, vector <pairOfIndexWindow>>& pairsOfaRead, uint w);
+void compareAndCorrectReadWindows(uint k, uint w, vector<string>& readSet,const unordered_map<string, uint> solidKmers, const unordered_map<string, vector<window>> kmerToWindows);
+
+#endif
 

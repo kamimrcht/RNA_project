@@ -31,7 +31,7 @@ int main(int argc, char ** argv){
 		getKmersinFromReadsInMap(k, readSet, kmersFromFile);
 		getSolidKmers(kmersFromFile, solidKmers);
 		getKmersinWindowsFromReads(k, w, readSet, solidKmers, kmerToWindows);
-		compareReadWindows(k, w, readSet, solidKmers, kmerToWindows);
+		compareAndCorrectReadWindows(k, w, readSet, solidKmers, kmerToWindows);
 	}
 	return 0;
 }
