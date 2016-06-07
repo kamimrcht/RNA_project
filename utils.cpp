@@ -68,3 +68,5 @@ string getSequenceInConsecutiveWindows(const string & readSequence, uint w, uint
 uint absolute(int a){
 	return  a >= 0 ? a : -a;
 }
+
+

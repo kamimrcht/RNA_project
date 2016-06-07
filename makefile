@@ -1,6 +1,6 @@
 CC=/usr/bin/g++
 #CC=g++
-CFLAGS=  -Wall  -Ofast -std=c++11 -march=native -pthread
+CFLAGS=  -Wall  -Ofast -std=c++11 -march=native -pthread  -fmax-errors=1
 LDFLAGS=-pthread
 
 
@@ -19,10 +19,10 @@ EXEC=rnaLR
 
 all: $(EXEC)
 
-rnaLR:   main.o compareReadsByWindows.o	utils.o	detectJumps.o consensus.o
+rnaLR:   main.o compareReadsByWindows.o	utils.o	detectJumps.o consensus.o correctionGraph.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-utils.o:	utils.cpp
+utils.o:	utils.cpp	correctionGraph.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 consensus.o:	consensus.cpp
@@ -34,7 +34,10 @@ compareReadsByWindows.o:	compareReadsByWindows.cpp compareReadsByWindows.h utils
 detectJumps.o:	detectJumps.cpp detectJumps.h utils.h consensus.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-main.o: main.cpp  compareReadsByWindows.h utils.h
+correctionGraph.o:	correctionGraph.cpp
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+main.o: main.cpp  compareReadsByWindows.h utils.h cDBG.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:

@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "compareReadsByWindows.h"
+#include "correctionGraph.h"
 #include "utils.h"
 
 using namespace std;
@@ -12,6 +13,17 @@ using namespace std;
 
 int main(int argc, char ** argv){
 	if (argc < 4){
+		/* test graph */
+		Graph graph(5);
+		string readRegion0("ACGTAGCATAGATTGA");
+		string readRegion1("ACGTAGCATAGATTGA");
+		string readRegion2("ACGTAGCTTAGATTGA");
+		vector <string> vecReads({readRegion0, readRegion1, readRegion2});
+		for (uint i(0); i<vecReads.size(); ++i){
+			graph.addKmersInGraph(vecReads[i], i);
+		}
+		
+		/* end test */
 		cout << "command line: ./rnaLR reads.fasta k w" << endl;
 	} else {
 		string fileName = argv[1];
