@@ -19,6 +19,7 @@ class Node {
  public:
 	uint index;
 	string kmer;
+	bool visited;
 	unordered_map <uint, vector<uint>> readsAndPositions;
 	vector <Node*> inNodes;
 	vector <Node*> outNodes;
@@ -27,9 +28,10 @@ class Node {
 
 	Node(uint index, const string& kmer, uint position, uint readIndex);
 	void addPosition(uint position, uint readIndex);
-	void addInNode(Node* nodeIn);
-	void addOutNode(Node* nodeOut);
+	//~ void addInNode(Node* nodeIn);
+	//~ void addOutNode(Node* nodeOut);
 	void duplicateNode();
+	void callOutNodes(ofstream* out);
 };
 
 // ----- end Class Node ----- //
@@ -41,14 +43,19 @@ class Graph {
 	uint k;
 	uint size;
 	vector <Node*> firstPositions;
-	unordered_map <string, Node> kmersToNode;
-	unordered_map <string, vector<Node>> prefixes;
-	unordered_map <string, vector<Node>> suffixes;
-
+	unordered_map <string, Node*> kmersToNode;
+	unordered_map <string, vector<Node*>> prefixes;
+	unordered_map <string, vector<Node*>> suffixes;
+	void graphClear();
 	
-	void addFirstNode(Node* node);
-	void addKmersInGraph(const string& region, uint index);
-	void sequences2dot(const Node& node);
+	//~ void addFirstNode(Node* node);
+	//~ void addKmersInGraph(const string& region, uint index);
+	uint createGraphFromSetofRegions(const vector <string>& regionVec);
+	void sequences2dot();
+	void getStartingNodes();
+	void duplicateNode(uint indexNode);
+	//~ void callOutNodes(const Node& node);
+	void getBackBone(uint bestKmer, vector<Node*>& backbone);
 };
 // ----- end Class Graph ----- //
 

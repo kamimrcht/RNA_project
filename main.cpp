@@ -14,15 +14,36 @@ using namespace std;
 int main(int argc, char ** argv){
 	if (argc < 4){
 		/* test graph */
-		Graph graph(5);
-		string readRegion0("ACGTAGCATAGATTGA");
-		string readRegion1("ACGTAGCATAGATTGA");
-		string readRegion2("ACGTAGCTTAGATTGA");
-		vector <string> vecReads({readRegion0, readRegion1, readRegion2});
-		for (uint i(0); i<vecReads.size(); ++i){
-			graph.addKmersInGraph(vecReads[i], i);
+		string fileName = argv[1];
+		ifstream readFile(fileName);
+		vector <string> readSet;
+		string sequence;
+		while (not readFile.eof()){
+            getline(readFile, sequence);
+			getline(readFile, sequence);
+			if (not sequence.empty()){
+				readSet.push_back(sequence);
+			}
 		}
-		
+		Graph graph(4);
+		//~ string readRegion0("ACGTAGCATAGATTGA");
+		//~ string readRegion1("ACGTAGCATAGATTGA");
+		//~ string readRegion2("ACGTAGCATAGATTGA");
+		string readRegion0("ACGTA");
+		string readRegion1("ACGTA");
+		string readRegion2("ACGTA");
+		vector <string> vecReads({readRegion0, readRegion1, readRegion2});
+		uint bestKmer(graph.createGraphFromSetofRegions(vecReads));
+		//~ uint bestKmer(graph.createGraphFromSetofRegions(readSet));
+		//~ cout << "bk "<< bestKmer << endl;
+		vector <Node*> backbone;
+		graph.getBackBone(bestKmer, backbone);
+		cout << bestKmer << " size bb " << backbone.size() << endl;
+		graph.getStartingNodes();
+		graph.sequences2dot();
+		system("dot -Tpng out.dot > output.png");
+		//~ graph.duplicateNode(0);
+		graph.graphClear();
 		/* end test */
 		cout << "command line: ./rnaLR reads.fasta k w" << endl;
 	} else {

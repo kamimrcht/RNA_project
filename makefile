@@ -34,10 +34,10 @@ compareReadsByWindows.o:	compareReadsByWindows.cpp compareReadsByWindows.h utils
 detectJumps.o:	detectJumps.cpp detectJumps.h utils.h consensus.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-correctionGraph.o:	correctionGraph.cpp
+correctionGraph.o:	correctionGraph.cpp	correctionGraph.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-main.o: main.cpp  compareReadsByWindows.h utils.h cDBG.h
+main.o: main.cpp  compareReadsByWindows.h utils.h correctionGraph.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
