@@ -25,23 +25,20 @@ int main(int argc, char ** argv){
 				readSet.push_back(sequence);
 			}
 		}
-		Graph graph(4);
-		//~ string readRegion0("ACGTAGCATAGATTGA");
-		//~ string readRegion1("ACGTAGCATAGATTGA");
-		//~ string readRegion2("ACGTAGCATAGATTGA");
-		string readRegion0("ACGTA");
-		string readRegion1("ACGTA");
-		string readRegion2("ACGTA");
+		Graph graph(21);
+		string readRegion0("ACGTAGCATAGATTGA");
+		string readRegion1("ACGTAGCATAGATTGA");
+		string readRegion2("ACGTAGCATAGATTGA");
 		vector <string> vecReads({readRegion0, readRegion1, readRegion2});
-		uint bestKmer(graph.createGraphFromSetofRegions(vecReads));
-		//~ uint bestKmer(graph.createGraphFromSetofRegions(readSet));
+		//~ uint bestKmer(graph.createGraphFromSetofRegions(vecReads));
+		uint bestKmer(graph.createGraphFromSetofRegions(readSet));
 		//~ cout << "bk "<< bestKmer << endl;
 		vector <Node*> backbone;
 		graph.getBackBone(bestKmer, backbone);
-		cout << bestKmer << " size bb " << backbone.size() << endl;
+		cout << "nb reads " << bestKmer << " size bb " << backbone.size() << endl;
 		graph.getStartingNodes();
-		graph.sequences2dot();
-		system("dot -Tpng out.dot > output.png");
+		//~ graph.sequences2dot();
+		//~ system("dot -Tpng out.dot > output.png");
 		//~ graph.duplicateNode(0);
 		graph.graphClear();
 		/* end test */

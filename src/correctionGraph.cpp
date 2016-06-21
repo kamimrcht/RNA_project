@@ -84,9 +84,7 @@ uint  Graph::createGraphFromSetofRegions(const vector <string>& regionVec){
 		//~ cout << kmerSupport;
 		while (posi + k <= region.size()){
 			string kmer(region.substr(posi, k));
-			cout << "kmer " << kmer << endl;
 			if (kmersToNode.count(kmer)){ // complete node information
-				cout << "loop " << kmer << endl;
 				(kmersToNode.at(kmer))->addPosition(posi, index);
 				//~ cout << kmersToNode.at(kmer)->readsAndPositions.size() << endl;
 				if (kmersToNode.at(kmer)->readsAndPositions.size() > kmerSupport){
