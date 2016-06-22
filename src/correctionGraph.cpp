@@ -3,18 +3,11 @@
 #include "correctionGraph.h"
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 
 
 using namespace std;
-string nPrefix(uint n, const string& sequence){
-	return sequence.substr(0, n);
-}
-
-
-string nSuffix(uint n,const string& sequence){
-	return sequence.substr(sequence.size()-n, n);
-}
 
 // ----- Class Node ----- //
 
@@ -45,7 +38,6 @@ void Node::addPosition(uint position, uint readIndex){
 //~ }
 
 void Node::callOutNodes(ofstream* out){
-
 	for (uint i(0); i < outNodes.size(); ++i){
 		if (outNodes[i]->visited == false){
 			*(out) << kmer  << readsAndPositions.size() << "->" << outNodes[i]->kmer << outNodes[i]->readsAndPositions.size() << endl;
@@ -56,7 +48,26 @@ void Node::callOutNodes(ofstream* out){
 			*(out) << kmer << readsAndPositions.size() << "->" << outNodes[i]->kmer << outNodes[i]->readsAndPositions.size()  << endl;
 		}
 	}
-		
+}
+
+void Node::getGlobalPosition(){
+	uint avg(0);
+	uint index(0);
+	bool repeated(false);
+	for (auto i(readsAndPositions.begin()); i != readsAndPositions.end(); ++i){
+		if (i->second.size()>1){
+			repeated = true;
+		}
+		if (not repeated){
+			avg += i->second[0];
+			++ index;
+		}
+	}
+	if (not repeated){
+		globalPosition = avg/index;
+	} else {
+		globalPosition = 0;
+	}
 }
 // ----- end Class Node ----- //
 
@@ -193,15 +204,143 @@ void Graph::sequences2dot(){
 }
 
 
-void Graph::getBackBone(uint bestKmer, vector<Node*>& backbone){
+void Graph::getBackBone(uint bestKmer){
 	for (auto i(kmersToNode.begin()); i!=kmersToNode.end(); ++i){
 		if (i->second->readsAndPositions.size() == bestKmer){
-			cout << i-> second -> kmer << endl;
-			backbone.push_back(i->second);
+			bool repeated(false);
+			for (auto j(i->second->readsAndPositions.begin()); j!= i->second->readsAndPositions.end(); ++j){// check if the kmer is not repeated
+				if (j->second.size() > 1){
+					repeated = true;
+					break;
+				}
+			}
+			if (not repeated){
+				i->second->getGlobalPosition();
+				backbone.push_back(i->second);
+			}
+		}
+	}
+	sort(backbone.begin(), backbone.end(), compareNode());
+	//~ for (uint i(0); i < backbone.size(); ++i){
+		//~ cout << backbone[i]->kmer << endl;
+	//~ }
+}
+
+
+//~ void Graph::traversalBetweenTwoNodes(){
+	//~ vector<Node*> traversal;
+	//~ for (uint i(0); i < backbone.size()-1; ++i){
+		//~ cout << "bb " << backbone[i]->kmer << " " << backbone[i]->globalPosition << endl;
+		//~ uint posi(backbone[i]->globalPosition);
+		//~ uint nextPosi(backbone[i+1]->globalPosition);
+		//~ uint mid(posi + nextPosi/2);
+		//~ cout << mid << endl;
+		//~ Node* currentNode(backbone[i]);
+		//~ for (uint position(posi); position < nextPosi; ++position){
+			//~ traversal.push_back(currentNode);
+			//~ for (uint next(0); next < currentNode->outNodes.size(); ++next){
+				//~ currentNode->outNodes[next]->getGlobalPosition();
+				//~ if (currentNode->outNodes[next] == backbone[i+1]){
+					//~ currentNode = currentNode->outNodes[next];
+					//~ break;
+				//~ }
+				//~ if (currentNode->outNodes[next]->globalPosition <= mid){
+					//~ cout << currentNode->outNodes[next]->kmer << endl;
+					//~ currentNode = currentNode->outNodes[next];
+				//~ }
+			//~ }
+		//~ }
+	//~ }
+	//~ cout << "*******" << endl;
+	//~ for (uint i(0); i < traversal.size(); ++i){
+		//~ cout << traversal[i]->kmer << endl;
+	//~ }
+//~ }
+
+void Graph::greedyTraversal(){
+	for (uint index1(0),index2(1); index1< backbone.size()-1 and index2 < backbone.size() ; ++index1, ++index2){
+		vector<Node*> traversal;
+		traversal.push_back(backbone[index1]);
+		cout << "*****" << backbone[index1]->kmer <<  endl;
+		vector <Node*> finalTraversal;
+		greedyDFStoNextBBNode(traversal, finalTraversal, backbone[index2]);
+		//~ cout << finalTraversal.size() << endl;
+		for (uint i(0); i < finalTraversal.size(); ++i){
+			//~ cout << "p" << endl;
+			cout << finalTraversal[i]->kmer << endl;
+		}
+	}
+	
+}
+
+
+void Graph::greedyDFStoNextBBNode(vector <Node*>& traversal, vector <Node*>& finalTraversal, Node* nextBBNode){
+	//~ uint finalScore(0);
+	Node* currentNode(traversal[traversal.size()-1]);
+	//~ vector <Node*> returnedTraversal;
+	//~ cout << finalScore << endl;
+	if (not currentNode->outNodes.empty()){
+		for (uint i(0); i < currentNode->outNodes.size(); ++i){
+			//~ vector<Node*> trav={currentNode};
+			//~ cout << currentNode->kmer << endl;
+			Node* nextNode(currentNode->outNodes[i]);
+			if (nextNode == nextBBNode){ // we reached the next node of the backbone
+				//~ break;
+				uint score(scoreTraversal(traversal));
+				uint bestScore(0);
+				if (not finalTraversal.empty()){
+					bestScore = scoreTraversal(finalTraversal);
+				}
+				//~ cout << score << " "<< finalScore << endl;
+				//~ cout << score << endl;
+				if (score >= bestScore){
+					//~ cout << "ok" << endl;
+					//~ finalScore = score;
+					//~ cout << score << " " << bestScore << endl;
+					finalTraversal = traversal;
+				}
+				traversal = {traversal[0]};
+			} else {
+				nextNode->getGlobalPosition();
+				if (nextNode->globalPosition < nextBBNode->globalPosition and nextNode->globalPosition != 0){ // we have not gone over the position of the next bb node yet
+					traversal.push_back(currentNode->outNodes[i]);
+					greedyDFStoNextBBNode(traversal, finalTraversal, nextBBNode);
+					//~ break;
+				} else {
+					traversal = {}; // if we have not reached
+				}
+			}
 		}
 	}
 }
 
+
+uint Graph::scoreTraversal(const vector<Node*> traversal){
+	uint score(0);
+	for (uint i(0); i<traversal.size(); ++i){
+		//~ cout << "." << traversal[i]->kmer << endl;
+		score += traversal[i]->readsAndPositions.size();
+	}
+	return score;
+}
+
 // ----- end Class Graph ----- //
+
+
+
+string nPrefix(uint n, const string& sequence){
+	return sequence.substr(0, n);
+}
+
+
+string nSuffix(uint n,const string& sequence){
+	return sequence.substr(sequence.size()-n, n);
+}
+
+//~ bool compareNodebyPosition(const Node* n1, const Node* n2){
+    //~ return n1->globalPosition < n2->globalPosition;
+//~ }
+
+
  
 
