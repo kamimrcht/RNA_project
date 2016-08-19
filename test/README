@@ -1,0 +1,11 @@
+/home/marchet/bin/pbsim-1.0.3-Linux-amd64-bin/Linux-amd64/bin/pbsim sequence.fa --prefix test --depth 10 --length-mean 1649 --length-min 1649 --length-max 1650 --model_qc ~/bin/pbsim-1.0.3_modified/data/model_qc_ccs 
+awk '{if(NR%8==1 || NR%8==2){print $0}}' test_0001.fastq | sed 's/@/>/g' > test_0001.fasta  # taking only impairs (same strand)
+
+
+#real data
+
+cd ~/Isoseq/fasta_files
+./select_reads.py brain.all_size.5merge.collapsed.longest_rep.fa.sam > reads.list
+~/scripts/convertOneLineFasta.py brain.all_size.5merge.collapsed.longest_rep.fa > brain.all_size.5merge.collapsed.longest_rep.fa.oneline.fa
+grep -f reads.list brain.all_size.5merge.collapsed.longest_rep.fa.oneline.fa -A 1 > clustered_reads.fa
+cp clustered_reads.fa ~/RNA_project/tests/

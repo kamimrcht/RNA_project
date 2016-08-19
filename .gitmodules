@@ -1,0 +1,6 @@
+[submodule "thirdparty/gatb-core"]
+	path = thirdparty/gatb-core
+	url = https://github.com/GATB/gatb-core.git
+[submodule "thirdparty/quasi_dictionary/BooPHF"]
+	path = thirdparty/quasi_dictionary/BooPHF
+	url = https://github.com/rizkg/BooPHF.git
