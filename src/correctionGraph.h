@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
-
+#include <unordered_set>
 
 #ifndef CORRECGPH
 #define CORRECGPH
@@ -18,7 +18,7 @@ class Node {
  public:
 	uint index;
 	string kmer;
-	uint globalPosition;
+	int globalPosition;
 	bool visited;
 	unordered_map <uint, vector<uint>> readsAndPositions;
 	vector <Node*> inNodes;
@@ -66,7 +66,7 @@ class Graph {
 	void getBackBone(uint bestKmer);
 	//~ void traversalBetweenTwoNodes();
 	void greedyTraversal();
-	void greedyDFStoNextBBNode(vector <Node*>& traversal, vector <Node*>& finalTraversal, Node* nextBBNode);
+	void greedyDFStoNextBBNode(vector <Node*>& traversal, vector <Node*>& finalTraversal, Node* nextBBNode,  unordered_set <Node*>& nodesPassed);
 	uint scoreTraversal(const vector<Node*> traversal);
 };
 // ----- end Class Graph ----- //

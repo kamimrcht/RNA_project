@@ -25,27 +25,29 @@ int main(int argc, char ** argv){
 				readSet.push_back(sequence);
 			}
 		}
-		Graph graph(4);
+		Graph graph(15);
 		//~ string readRegion0("ACGTAGCATACATTGAG");
 		//~ string readRegion1("ACGTACCATACTTTGAG");
 		//~ string readRegion2("ACGTAGCATACATTGAG");
-		string readRegion0("ACTGAACATT");
-		string readRegion1("ACTGACCATT");
-		string readRegion2("ACTGTACATT");
-		string readRegion3("ACTGAACATT");
+		//~ string readRegion0("ACTGAACATT");
+		//~ string readRegion1("ACTGACCATT");
+		//~ string readRegion2("ACTGTACATT");
+		//~ string readRegion3("ACTGAACATT");
 		//~ vector <string> vecReads({readRegion0, readRegion1, readRegion2});
-		vector <string> vecReads({readRegion0, readRegion1, readRegion2, readRegion3});
+		//~ vector <string> vecReads({readRegion0, readRegion1, readRegion2, readRegion3});
 		
-		uint bestKmer(graph.createGraphFromSetofRegions(vecReads));
-		//~ uint bestKmer(graph.createGraphFromSetofRegions(readSet));
+		//~ uint bestKmer(graph.createGraphFromSetofRegions(vecReads));
+		uint bestKmer(graph.createGraphFromSetofRegions(readSet));
+		
 		//~ cout << "bk "<< bestKmer << endl;
-		vector <Node*> backbone;
+		//~ vector <Node*> backbone;
 		graph.getBackBone(bestKmer);
+		cout << "nb reads " << bestKmer << " size bb " << graph.backbone.size() << endl;
 		graph.greedyTraversal();
-		//~ cout << "nb reads " << bestKmer << " size bb " << backbone.size() << endl;
+		
 		//~ graph.getStartingNodes();
-		graph.sequences2dot();
-		system("dot -Tpng out.dot > output.png");
+		//~ graph.sequences2dot();
+		//~ system("dot -Tpng out.dot > output.png");
 		//~ graph.duplicateNode(0);
 		graph.graphClear();
 		/* end test */

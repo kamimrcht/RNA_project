@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <unordered_set>
 
 
 
@@ -50,13 +51,17 @@ void Node::callOutNodes(ofstream* out){
 	}
 }
 
+
 void Node::getGlobalPosition(){
 	uint avg(0);
 	uint index(0);
 	bool repeated(false);
+	//~ cout << "e" << endl;
 	for (auto i(readsAndPositions.begin()); i != readsAndPositions.end(); ++i){
 		if (i->second.size()>1){
 			repeated = true;
+			//~ cout << "rep" << endl;
+			break;
 		}
 		if (not repeated){
 			avg += i->second[0];
@@ -66,7 +71,8 @@ void Node::getGlobalPosition(){
 	if (not repeated){
 		globalPosition = avg/index;
 	} else {
-		globalPosition = 0;
+		//~ cout << "pos " << globalPosition << endl;
+		globalPosition = -1;
 	}
 }
 // ----- end Class Node ----- //
@@ -263,10 +269,9 @@ void Graph::greedyTraversal(){
 		traversal.push_back(backbone[index1]);
 		cout << "*****" << backbone[index1]->kmer <<  endl;
 		vector <Node*> finalTraversal;
-		greedyDFStoNextBBNode(traversal, finalTraversal, backbone[index2]);
-		//~ cout << finalTraversal.size() << endl;
+		unordered_set <Node*> nodesPassed;
+		greedyDFStoNextBBNode(traversal, finalTraversal, backbone[index2], nodesPassed);
 		for (uint i(0); i < finalTraversal.size(); ++i){
-			//~ cout << "p" << endl;
 			cout << finalTraversal[i]->kmer << endl;
 		}
 	}
@@ -274,44 +279,68 @@ void Graph::greedyTraversal(){
 }
 
 
-void Graph::greedyDFStoNextBBNode(vector <Node*>& traversal, vector <Node*>& finalTraversal, Node* nextBBNode){
-	//~ uint finalScore(0);
+void Graph::greedyDFStoNextBBNode(vector <Node*>& traversal, vector <Node*>& finalTraversal, Node* nextBBNode, unordered_set <Node*>& nodesPassed){
+	
+	//~ cout<<"0"<<endl;
+	cout<<traversal.size()<<endl;
 	Node* currentNode(traversal[traversal.size()-1]);
-	//~ vector <Node*> returnedTraversal;
-	//~ cout << finalScore << endl;
-	if (not currentNode->outNodes.empty()){
-		for (uint i(0); i < currentNode->outNodes.size(); ++i){
-			//~ vector<Node*> trav={currentNode};
-			//~ cout << currentNode->kmer << endl;
-			Node* nextNode(currentNode->outNodes[i]);
-			if (nextNode == nextBBNode){ // we reached the next node of the backbone
-				//~ break;
-				uint score(scoreTraversal(traversal));
-				uint bestScore(0);
-				if (not finalTraversal.empty()){
-					bestScore = scoreTraversal(finalTraversal);
-				}
-				//~ cout << score << " "<< finalScore << endl;
-				//~ cout << score << endl;
-				if (score >= bestScore){
-					//~ cout << "ok" << endl;
-					//~ finalScore = score;
-					//~ cout << score << " " << bestScore << endl;
-					finalTraversal = traversal;
-				}
-				traversal = {traversal[0]};
-			} else {
-				nextNode->getGlobalPosition();
-				if (nextNode->globalPosition < nextBBNode->globalPosition and nextNode->globalPosition != 0){ // we have not gone over the position of the next bb node yet
-					traversal.push_back(currentNode->outNodes[i]);
-					greedyDFStoNextBBNode(traversal, finalTraversal, nextBBNode);
-					//~ break;
+	cout<<currentNode->globalPosition<<endl;
+	//~ cout << "1"<<flush;
+	cout <<  "cccp" << nodesPassed.size() << endl;
+	
+		if (not currentNode->outNodes.empty()){
+			for (uint i(0); i < currentNode->outNodes.size(); ++i){
+				if (not nodesPassed.count(currentNode)){
+					if(currentNode != currentNode->outNodes[i]){ // not to loop over one node
+						//~ cout << "2"<<flush;;
+						Node* nextNode(currentNode->outNodes[i]);
+						if (nextNode == nextBBNode){ // we reached the next node of the backbone
+							nodesPassed = {};
+							//~ cout << "3"<<flush;;
+							uint score(scoreTraversal(traversal));
+							uint bestScore(0);
+							if (not finalTraversal.empty()){
+								bestScore = scoreTraversal(finalTraversal);
+								//~ cout << "4"<<flush;;
+							}
+							if (score >= bestScore){
+								finalTraversal = traversal;
+								//~ cout << "5"<<flush;;
+							}
+							traversal = {traversal[0]};
+						} else {
+							//~ cout << "b"<<flush;;
+							//~ cout << currentNode->outNodes[i]->kmer << " " << currentNode->outNodes[i]->globalPosition << " "  << nextBBNode->globalPosition << " ";
+							//~ cout << "a"<<flush;;
+							nextNode->getGlobalPosition();
+							//~ cout << "6"<<flush;;
+							nextNode->globalPosition;
+							//~ cout << "d"<<flush;;
+							nextBBNode->globalPosition;
+							//~ cout << "e"<<flush;;
+							currentNode->outNodes[i];
+							//~ cout << "f"<<flush;;
+							if (nextNode->globalPosition < nextBBNode->globalPosition and nextNode->globalPosition != -1){ // we have not gone over the position of the next bb node yet
+								cout << "c"<<flush;;
+								traversal.push_back(currentNode->outNodes[i]);
+								nodesPassed.insert(currentNode);
+								//~ cout << "7"<<flush;;
+								greedyDFStoNextBBNode(traversal, finalTraversal, nextBBNode, nodesPassed);
+								//~ cout << "8"<<flush;;
+							} else {
+								traversal = {}; // if we have not reached
+								nodesPassed ={};
+								//~ cout << "9"<<flush;;
+							}
+						}
+					}
 				} else {
-					traversal = {}; // if we have not reached
-				}
+					cout << "ttttttttttttttttt" << flush;
+					traversal = {};
+					nodesPassed ={};
+				}	
 			}
 		}
-	}
 }
 
 

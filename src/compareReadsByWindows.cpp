@@ -176,7 +176,7 @@ void compareAndCorrectReadWindows(uint k, uint w, vector<string>& readSet,const 
 				}
 			}
 			//~ cout << "*** correction phase" << endl;
-			consensusBetweenRegions(correspondance, readSet, w, k);
+			//~ consensusBetweenRegions(correspondance, readSet, w, k);
 			//~ for (auto iter=correspondance.begin(); iter!=correspondance.end(); ++iter){
 				//~ for (uint i(0); i < iter->second.size(); ++i){
 					//~ cout << iter->first.firstWindow  <<  " " << iter->first.lastWindow << " : " << iter->second[i].firstWindow << " " << iter->second[i].lastWindow << endl;
