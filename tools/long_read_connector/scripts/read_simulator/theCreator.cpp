@@ -157,7 +157,7 @@ void generateReads(uint numberReads, uint referencesNumber=1, const string& outF
 int main(int argc, char ** argv){
 	srand (time(NULL));
 	auto startChrono = chrono::system_clock::now();
-	generateReads(10000);
+	generateReads(1000);
 	auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 	cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
 	return 0;
