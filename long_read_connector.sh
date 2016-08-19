@@ -27,7 +27,7 @@ fi
 
 
 function help {
-echo "short_read_connector.sh - Groups reads within a RNA read set."
+echo "long_read_connector.sh - Groups reads within a RNA read set."
 echo "Version "$version
 echo "Usage: sh short_read_connector.sh -b read_file_of_files [OPTIONS]"
 echo  "MANDATORY:"
@@ -44,9 +44,6 @@ echo  "	-a: kmer abundance min (kmer from bank seen less than this value are not
 echo  "	-s: Minimal percentage of shared kmer in a region for considering 2 reads in a same group. Default=75"
 echo  " -w: Region (putative exon) size. Default=80"
 echo  "	-t: number of thread used. Default=0"
-echo  "	-d:  use disk over RAM (slower and no impact with -c option)"
-echo  "	-c: use short_read_connector_counter (SRC_counter)"
-echo  " -r: use short_read_connector_RNA (SRC_linker_RNA)"
 }
 
 
@@ -68,7 +65,7 @@ countMode=0
 #######################################################################
 #################### GET OPTIONS                #######################
 #######################################################################
-while getopts "hgf:q:p:k:a:s:w:t:F:G:dcr" opt; do
+while getopts "hgf:q:p:k:a:s:w:t:F:G:" opt; do
 case $opt in
 
 h)
@@ -95,7 +92,7 @@ countMode=1
 
 r)
 
-echo "use SRC_linker_RNA"
+echo "use long_read_connector"
 rnaMode=1
 ;;
 
@@ -205,7 +202,7 @@ fi
 
 # SRC_LINKER_RNA
 if [ $diskMode -eq 0 ]; then
-	cmd="${BIN_DIR}/LRC_linker_rna"
+	cmd="${BIN_DIR}/long_read_connector"
 	# adding options
 	cmd="${cmd} -graph ${out_dsk}  -bank ${bank_set}  -out ${result_file} -kmer_threshold ${kmer_threshold} -window_size ${window_size} -fingerprint_size ${fingerprint_size} -core ${core_used} -gamma ${gamma}"
 
@@ -224,7 +221,7 @@ echo ${cmd}
 ${cmd}
 if [ $? -ne 0 ]
 then
-echo "there was a problem with short read connector."
+echo "there was a problem with long read connector."
 exit 1
 fi
 
@@ -238,8 +235,8 @@ fi
 #./scripts/SRC_linker2reads.py ${bank_set} ${result_file}
 
 echo "***********************************"
-echo "Short read connector finished"
+echo "Long read connector RNA finished"
 echo "results in:"
 echo "   "${result_file}
-echo "Contact: pierre.peterlongo@inria.fr"
+echo "Contact: camille.marchet@irisa.fr"
 echo "***********************************"
