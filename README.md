@@ -33,7 +33,7 @@ c++ compiler; compilation was tested with gcc and g++ version>=4.5 (Linux) and c
 # Quick start
 
 ##Minimal call
-Run a simple test looking for reads from data/c2.fasta.gz that share at least 20 kmers (k=25) with data/c1.fasta.gz. Kmers indexed from data/c1.fasta.gz are those occurring at least 2 times. 
+Run a simple test looking for reads from data/c1.fasta.gz that can be grouped altogether. Kmers indexed from data/c1.fasta are those occurring at least 2 times. 
 
 	 ./long_read_connector.sh -f data/c1.fasta
      
