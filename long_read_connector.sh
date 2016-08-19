@@ -37,7 +37,7 @@ echo  "	  Example: -b data/c1.fasta.gz"
 echo  "OPTIONS:"
 echo  "	-p prefix. All out files will start with this prefix. Default=\"short_read_connector_res\""
 echo  "	-g: with this option, if a file of solid kmer exists with same prefix name and same k value, then it is re-used and not re-computed."
-echo  "	-k value. Set the length of used kmers. Must fit the compiled value. Default=31"
+echo  "	-k value. Set the length of used kmers. Must fit the compiled value. Default=21"
 echo  "	-F value. Fingerprint size. Size of the key associated to each indexed value, limiting false positives. Default=12"
 echo  "	-G value. gamma value. MPHF expert users parameter - Default=2"
 echo  "	-a: kmer abundance min (kmer from bank seen less than this value are not indexed). Default=2"
@@ -50,7 +50,7 @@ echo  "	-t: number of thread used. Default=0"
 
 bank_set=""
 query_set=""
-kmer_size=31
+kmer_size=21
 abundance_min=2
 gamma=5
 fingerprint_size=24
