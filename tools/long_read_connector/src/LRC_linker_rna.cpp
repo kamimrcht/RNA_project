@@ -200,7 +200,11 @@ public:
 		    
 		    
 		    int smallKsize(11);
-		    int nbSet(4);
+		    int nbElevenMersInReadOfSizeEightHundred(120);
+		    int nbKmersPerRead(nbElevenMersInReadOfSizeEightHundred);
+		    int nbSet(3);
+		    int nbKmersPerChunk(nbKmersPerRead/nbSet);
+		    //~ cout << "********** " << nbKmersPerChunk << endl;
 		    vector<unordered_set<string>> vecSets(nbSet);
 		    int readFraction(0);
 		    int rr(0);
@@ -233,25 +237,25 @@ public:
 			int identity(0);
 			int readFraction(0);
 			int rr(0);
-			
+			int identityPerChunk(0);
 			for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
-				//~ cout << "ok2 " <<  readFraction << " " << smallK << " " << (int)(*vecReads)[element].size() - smallKsize + 1 << endl;
-				//~ cout << ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet << endl;
 				string kmer((*vecReads)[element].substr(smallK, smallKsize));
 				if (vecSets[readFraction].count(kmer)){
-				//~ if (smallKmersofSequence.count(kmer)){
-				    ++identity;
+				    ++identityPerChunk;
+				    cout << identityPerChunk << endl;
+				    //~ ++identity;
 				}
-				//~ cout << readFraction << endl;
 				if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet + rr){
+				    identityPerChunk = 0;
 				    ++readFraction;
 				    rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet + 1;
-				    //~ cout << readFraction <<  endl;
+				}
+				if (identityPerChunk > nbKmersPerChunk){
+					++ identity;
 				}
 			}
-			//~ cout << "ok" << endl;
-			// TODO: identity must be calculated taking into account that kmers must be found everywhere on the read length
-			if (identity > 50){  // based on simulations for reads of size 1000
+			if (identity >= nbSet){  // based on simulations for reads of size 1000
+			//~ if (identity > 50){  // based on simulations for reads of size 1000
 			//~ if (double(r->second.size()) >= 0.9 * identity){
 			    
 			    for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
