@@ -197,13 +197,33 @@ public:
 			}
 			++i;
 		    }
-		    unordered_set<string> smallKmersofSequence;
+		    
 		    
 		    int smallKsize(11);
-		    for (int i(0); i < (*vecReads)[seqIndex].size() - smallKsize + 1; ++i){  // get all small k-mers from the target sequence
-			string smallKmer((*vecReads)[seqIndex].substr(i, smallKsize));
-			smallKmersofSequence.insert(smallKmer);
+		    int nbSet(4);
+		    vector<unordered_set<string>> vecSets(nbSet);
+		    int readFraction(0);
+		    int rr(0);
+		    //~ for (int v(0); v < vecSets.size(); ++v){
+			 //~ unordered_set<string> smallKmersofSequence;
+		    //~ cout << "ok" << endl;
+		    //~ cout << (int)(*vecReads)[seqIndex].size() << endl;
+		    for (int vv(0); vv < (int)(*vecReads)[seqIndex].size() - smallKsize + 1; ++vv){  // get all small k-mers from the target sequence
+			string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize));
+			vecSets[readFraction].insert(smallKmer);
+			//~ cout << readFraction << endl;
+			if (vv > ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbSet + rr){
+			    ++readFraction;
+			    rr += ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbSet + 1;
+			}
 		    }
+		    
+		    //~ }
+		    //~ unordered_set<string> smallKmersofSequence;
+		    //~ for (int i(0); i < (*vecReads)[seqIndex].size() - smallKsize + 1; ++i){  // get all small k-mers from the target sequence
+			//~ string smallKmer((*vecReads)[seqIndex].substr(i, smallKsize));
+			//~ smallKmersofSequence.insert(smallKmer);
+		    //~ }
 		    
 		    for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){
 			size_t lenseq = seq.getDataSize();
@@ -211,14 +231,27 @@ public:
 			int element((int)r->first);
 
 			int identity(0);
+			int readFraction(0);
+			int rr(0);
+			
 			for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
+				//~ cout << "ok2 " <<  readFraction << " " << smallK << " " << (int)(*vecReads)[element].size() - smallKsize + 1 << endl;
+				//~ cout << ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet << endl;
 				string kmer((*vecReads)[element].substr(smallK, smallKsize));
-				if (smallKmersofSequence.count(kmer)){
+				if (vecSets[readFraction].count(kmer)){
+				//~ if (smallKmersofSequence.count(kmer)){
 				    ++identity;
 				}
+				//~ cout << readFraction << endl;
+				if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet + rr){
+				    ++readFraction;
+				    rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet + 1;
+				    //~ cout << readFraction <<  endl;
+				}
 			}
+			//~ cout << "ok" << endl;
 			// TODO: identity must be calculated taking into account that kmers must be found everywhere on the read length
-			if (identity > 100){  // based on simulations for reads of size 1000
+			if (identity > 50){  // based on simulations for reads of size 1000
 			//~ if (double(r->second.size()) >= 0.9 * identity){
 			    
 			    for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
