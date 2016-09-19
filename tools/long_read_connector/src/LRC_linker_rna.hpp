@@ -69,7 +69,7 @@ public:
 
     void fill_quasi_dictionary(const int nbCores, const string& bankName, vector <string>& v);
 
-    void parse_query_sequences(int threshold, uint size_window, const int nbCores, const string& bankName, vector<string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy);
+    void parse_query_sequences(int threshold, uint size_window, const int nbCores, const string& bankName, vector<string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy, int smallK, int nbSmallK, int nbWindows);
     
     void print_results(FILE* outFile, std::unordered_map<uint64_t, vector<readGrouped>>& read_group);
 };

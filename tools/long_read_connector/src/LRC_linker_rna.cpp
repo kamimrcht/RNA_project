@@ -1,4 +1,5 @@
 #include <LRC_linker_rna.hpp>
+//~ #include "LRC_cluster_rna.hpp"
 #include "unordered_set"
 
 using namespace std;
@@ -16,6 +17,12 @@ static const char* STR_THRESHOLD = "-kmer_threshold";
 static const char* STR_WINDOW = "-window_size";
 static const char* STR_OUT_FILE = "-out";
 static const char* STR_CORE = "-core";
+
+
+static const char* STR_SMALLK = "-small_k";
+static const char* STR_NBSMALLK = "-nb_small_k";
+static const char* STR_NBWINDOWS = "-nb_windows";
+
 uint countRm(0), prevCount(0);
 
 
@@ -30,6 +37,11 @@ SRC_linker_rna::SRC_linker_rna()  : Tool ("SRC_linker_rna"){
 	getParser()->push_back (new OptionOneParam (STR_GAMMA, "gamma value",    false, "2"));
 	getParser()->push_back (new OptionOneParam (STR_FINGERPRINT, "fingerprint size",    false, "8"));
 	getParser()->push_back (new OptionOneParam (STR_CORE, "Number of thread",    false, "1"));
+	
+	
+	getParser()->push_back (new OptionOneParam (STR_SMALLK, "small k value",    false, "9"));
+	getParser()->push_back (new OptionOneParam (STR_NBSMALLK, "nb of small k mers to look for",    false, "120"));
+	getParser()->push_back (new OptionOneParam (STR_NBWINDOWS, "nb of windows",    false, "15"));
 	//~ nbRead=0;
 }
 
@@ -144,6 +156,9 @@ public:
 	Kmer<KMER_SPAN(1)>::ModelCanonical::Iterator* itKmer;
 	vector<string>* vecReads;
 	unordered_map<uint64_t, vector<int>>* readRedundancy;
+	int smallKsize;
+	int nbSmallK;
+	int nbWindows;
     
 	FunctorQueryMatchingRegions(const FunctorQueryMatchingRegions& lol) // used by the dispatcher
 	{
@@ -162,29 +177,32 @@ public:
 		itKmer = new Kmer<KMER_SPAN(1)>::ModelCanonical::Iterator (model);
 		vecReads = lol.vecReads;
 		readRedundancy = lol.readRedundancy;
+		smallKsize = lol.smallKsize;
+		nbSmallK = lol.nbSmallK;
+		nbWindows = lol.nbWindows;
 	}
     
-	FunctorQueryMatchingRegions(ISynchronizer* synchro, FILE* outFile,  const int kmer_size,  quasidictionaryVectorKeyGeneric <IteratorKmerH5Wrapper, u_int32_t >* quasiDico, const int threshold, const uint size_window, std::unordered_map<uint64_t, vector<uint>>& reads_sharing_kmer_2_positions, std::unordered_map<uint64_t, vector<readGrouped>> read_group, vector<string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy)
-	: synchro(synchro), outFile(outFile), kmer_size(kmer_size), quasiDico(quasiDico), threshold(threshold),  size_window(size_window), reads_sharing_kmer_2_positions(reads_sharing_kmer_2_positions), read_group(read_group), vecReads(vecReads), readRedundancy(readRedundancy){
+	FunctorQueryMatchingRegions(ISynchronizer* synchro, FILE* outFile,  const int kmer_size,  quasidictionaryVectorKeyGeneric <IteratorKmerH5Wrapper, u_int32_t >* quasiDico, const int threshold, const uint size_window, std::unordered_map<uint64_t, vector<uint>>& reads_sharing_kmer_2_positions, std::unordered_map<uint64_t, vector<readGrouped>> read_group, vector<string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy, int smallKsize, int nbSmallK, int nbWindows)
+	: synchro(synchro), outFile(outFile), kmer_size(kmer_size), quasiDico(quasiDico), threshold(threshold),  size_window(size_window), reads_sharing_kmer_2_positions(reads_sharing_kmer_2_positions), read_group(read_group), vecReads(vecReads), readRedundancy(readRedundancy), smallKsize(smallKsize), nbSmallK(nbSmallK), nbWindows(nbWindows){
 		model=Kmer<KMER_SPAN(1)>::ModelCanonical (kmer_size);
 	}
     
 	FunctorQueryMatchingRegions(){
 	}
 	void operator() (Sequence& seq){
-	    if (not valid_sequence(seq, kmer_size)){return;}
+	    if (not valid_sequence(seq, kmer_size)){return;} // query sequence
 		uint64_t seqIndex(seq.getIndex() + 1);
+		//~ cout << "READ N" << seqIndex << endl;
 		if (not (*vecReads)[seqIndex].empty()){
 		    bool exists;
 		    associated_read_ids = {}; // list of the ids of reads from the bank where a kmer occurs
 		    reads_sharing_kmer_2_positions = {};  // store the position where a k-mer is seen in a read that can be potentially recruited
 		    itKmer->setData(seq.getData());
 		    uint i(0); // position on the read
-		    
 		    for (itKmer->first(); !itKmer->isDone(); itKmer->next()){
-			quasiDico->get_value((*itKmer)->value().getVal(), exists, associated_read_ids); // warning: a same read id can be stored several times
+			quasiDico->get_value((*itKmer)->value().getVal(), exists, associated_read_ids); // warning: a same read id can be stored several times - indexes of reads sharing kmers with query are stored in associated_read_ids
 			if(!exists) {++i; continue;}
-			for (uint r(0); r < associated_read_ids.size(); ++r){
+			for (uint r(0); r < associated_read_ids.size(); ++r){ // map: associated_read to vector of kmers
 			    if (reads_sharing_kmer_2_positions.count(associated_read_ids[r])){
 				if (i > reads_sharing_kmer_2_positions[associated_read_ids[r]][reads_sharing_kmer_2_positions[associated_read_ids[r]].size() - 1]) { /*because of the warning above */
 				    reads_sharing_kmer_2_positions[associated_read_ids[r]].push_back(i);
@@ -197,67 +215,48 @@ public:
 			}
 			++i;
 		    }
-		    
-		    
-		    int smallKsize(11);
-		    int nbElevenMersInReadOfSizeEightHundred(120);
-		    int nbKmersPerRead(nbElevenMersInReadOfSizeEightHundred);
-		    int nbSet(3);
-		    int nbKmersPerChunk(nbKmersPerRead/nbSet);
-		    //~ cout << "********** " << nbKmersPerChunk << endl;
-		    vector<unordered_set<string>> vecSets(nbSet);
+		    int nbKmersPerChunk(nbSmallK/nbWindows);
+		    //~ int nbKmersPerChunk(nbSmallK/nbWindows - 2 * smallKsize);
+		    //~ int nbKmersPerChunk(nbSmallK/nbWindows - 3 * smallKsize);
+		    vector<unordered_set<string>> vecSets(nbWindows);
 		    int readFraction(0);
 		    int rr(0);
-		    //~ for (int v(0); v < vecSets.size(); ++v){
-			 //~ unordered_set<string> smallKmersofSequence;
-		    //~ cout << "ok" << endl;
-		    //~ cout << (int)(*vecReads)[seqIndex].size() << endl;
-		    for (int vv(0); vv < (int)(*vecReads)[seqIndex].size() - smallKsize + 1; ++vv){  // get all small k-mers from the target sequence
+		    for (int vv(0); vv < (int)(*vecReads)[seqIndex].size() - smallKsize + 1; ++vv){  // get all small k-mers from the query sequence, in different windows
 			string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize));
-			vecSets[readFraction].insert(smallKmer);
-			//~ cout << readFraction << endl;
-			if (vv > ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbSet + rr){
+			vecSets[readFraction].insert(smallKmer); // for each window (readFraction), store the associated kmers
+			if (vv > ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + rr){
 			    ++readFraction;
-			    rr += ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbSet + 1;
+			    rr += ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + 1;
 			}
 		    }
-		    
-		    //~ }
-		    //~ unordered_set<string> smallKmersofSequence;
-		    //~ for (int i(0); i < (*vecReads)[seqIndex].size() - smallKsize + 1; ++i){  // get all small k-mers from the target sequence
-			//~ string smallKmer((*vecReads)[seqIndex].substr(i, smallKsize));
-			//~ smallKmersofSequence.insert(smallKmer);
-		    //~ }
-		    
-		    for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){
+		    for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){ // for all associated reads
 			size_t lenseq = seq.getDataSize();
-			//~ uint identity(uint(lenseq) - kmer_size + 1);
 			int element((int)r->first);
-
 			int identity(0);
 			int readFraction(0);
 			int rr(0);
 			int identityPerChunk(0);
+			//~ cout << "w " << readFraction << endl; 
 			for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
-				string kmer((*vecReads)[element].substr(smallK, smallKsize));
-				if (vecSets[readFraction].count(kmer)){
-				    ++identityPerChunk;
-				    cout << identityPerChunk << endl;
-				    //~ ++identity;
-				}
-				if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet + rr){
-				    identityPerChunk = 0;
-				    ++readFraction;
-				    rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbSet + 1;
-				}
-				if (identityPerChunk > nbKmersPerChunk){
-					++ identity;
-				}
-			}
-			if (identity >= nbSet){  // based on simulations for reads of size 1000
-			//~ if (identity > 50){  // based on simulations for reads of size 1000
-			//~ if (double(r->second.size()) >= 0.9 * identity){
 			    
+			    string kmer((*vecReads)[element].substr(smallK, smallKsize));
+			    if (vecSets[readFraction].count(kmer)){ // check if the kmer of the associated read is in the same window than in  the query read
+				++identityPerChunk;
+			    }
+			    if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + rr){ // switch window for the query read
+				identityPerChunk = 0;
+				++readFraction;
+				//~ cout << "w " << readFraction << endl; 
+				rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + 1;
+			    }
+			    if (identityPerChunk == nbKmersPerChunk){
+				    //~ cout << "identical read fraction " << readFraction << endl;
+				    identityPerChunk = 0;
+				    ++ identity;
+			    }
+			}
+			if (identity >= nbWindows){
+			//~ if (identity >= nbWindows - (nbWindows/10)){
 			    for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
 				string kmer((*vecReads)[element].substr(toErase, kmer_size));
 				uint64_t kmerInt(string2int(kmer));
@@ -270,6 +269,16 @@ public:
 				vector<int> redundant = {element};
 				readRedundancy->insert({seq.getIndex(), redundant});
 			    }
+			    // test
+			    //~ bool confirm(false);
+			    //~ if (read_group.count(seqIndex)){
+				//~ read_group[seqIndex].push_back({element, confirm});
+			    //~ } else {
+				//~ readGrouped rg({element, confirm});
+				//~ vector <readGrouped> v({rg});
+				//~ read_group[seqIndex] = {v};
+			    //~ }
+			    // end test
 			    (*vecReads)[element] = "";
 			}
 			uint bound(double((uint(lenseq) - kmer_size + 1) * threshold)/(kmer_size * 100));
@@ -307,7 +316,6 @@ public:
 				} 
 			    }
 			    if (found){
-				string seqString(seq.toString());
 				bool confirm(false);
 				if (read_group.count(seqIndex)){
 				    read_group[seqIndex].push_back({r->first, confirm});
@@ -348,7 +356,7 @@ public:
 
 
 
-void SRC_linker_rna::parse_query_sequences(int threshold, uint size_window, const int nbCores, const string& bankName, vector <string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy){
+void SRC_linker_rna::parse_query_sequences(int threshold, uint size_window, const int nbCores, const string& bankName, vector <string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy, int smallK, int nbSmallK, int nbWindows){
     IBank* bank = Bank::open(bankName);
     cout<<"Query "<<kmer_size<<"-mers from bank "<< bankName <<endl;
     FILE * outFile;
@@ -362,7 +370,7 @@ void SRC_linker_rna::parse_query_sequences(int threshold, uint size_window, cons
     //~ Dispatcher dispatcher (nbCores, 10000);
     std::unordered_map<uint64_t, vector<uint>> reads_sharing_kmer_2_positions;
     std::unordered_map<uint64_t, vector<readGrouped>> read_group;
-    dispatcher.iterate(itSeq, FunctorQueryMatchingRegions(synchro, outFile, kmer_size, &quasiDico, threshold, size_window, reads_sharing_kmer_2_positions, read_group, vecReads, readRedundancy));
+    dispatcher.iterate(itSeq, FunctorQueryMatchingRegions(synchro, outFile, kmer_size, &quasiDico, threshold, size_window, reads_sharing_kmer_2_positions, read_group, vecReads, readRedundancy, smallK, nbSmallK, nbWindows));
     fclose (outFile);
     delete synchro;
 }
@@ -373,7 +381,13 @@ void SRC_linker_rna::execute(){
 	int nbCores = getInput()->getInt(STR_CORE);
 	int fingerprint_size = getInput()->getInt(STR_FINGERPRINT);
 	gamma_value = getInput()->getInt(STR_GAMMA);
-	
+
+	int small_k =  9;
+	int nb_small_k = 100;
+	int nb_windows = 41;
+	//~ int small_k = getInput()->getInt(STR_SMALLK);
+	//~ int nb_small_k = getInput()->getInt(STR_NBSMALLK);
+	//~ int nb_windows = getInput()->getInt(STR_NBWINDOWS);
 	// IMPORTANT NOTE:
 	// Actually, during the filling of the dictionary values, one may fall on non solid non indexed kmers
 	// that are quasi dictionary false positives (ven with a non null fingerprint. This means that one nevers knows in advance how much
@@ -387,11 +401,13 @@ void SRC_linker_rna::execute(){
 	create_quasi_dictionary(fingerprint_size, nbCores);
 	string bankName(getInput()->getStr(STR_URI_BANK_INPUT));
 	fill_quasi_dictionary(nbCores, bankName, readsVector);
-	cout << "*************" <<  readsVector.size() << endl;
 	int threshold = getInput()->getInt(STR_THRESHOLD);
 	uint size_window =  getInput()->getInt(STR_WINDOW);
 	unordered_map <uint64_t, vector<int>> readRedundancy;
-	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy);
+	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, nb_windows);
+
+	
+	
 	getInfo()->add (1, &LibraryInfo::getInfo());
 	getInfo()->add (1, "input");
 	getInfo()->add (2, "Sequences bank",  "%s",  getInput()->getStr(STR_URI_BANK_INPUT).c_str());
@@ -402,4 +418,9 @@ void SRC_linker_rna::execute(){
 	getInfo()->add (2, "Minimal kmer span percentage",  "%d",  threshold);
 	getInfo()->add (1, "output");
 	getInfo()->add (2, "Results written in",  "%s",  getInput()->getStr(STR_OUT_FILE).c_str());
+
+	getInfo()->add (2, "Small k size",  "%d",  small_k);
+	getInfo()->add (2, "Number of small k-mers",  "%d",  nb_small_k);
+	getInfo()->add (2, "Number of windows",  "%d",  nb_windows);
+
 }
