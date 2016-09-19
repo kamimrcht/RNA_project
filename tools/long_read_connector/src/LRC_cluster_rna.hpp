@@ -16,14 +16,11 @@ using namespace std;
 
 
 //~ class LRC_cluster_rna : public Tool
-struct lol{
-    int i;
-};
-
 
 class LRC_cluster_rna
 {
     string inFile;
+    string outFile;
 //~ private:
 
     //~ string inFile;
@@ -32,7 +29,7 @@ public:
 	
     // Constructor
 	LRC_cluster_rna();
-	LRC_cluster_rna(const string& file);
+	LRC_cluster_rna(const string& fileIn, const string& fileOut);
 
     // Actual job done by the tool is here
     void split_src_lines(const string& line, char delim, vector<string>& vec);

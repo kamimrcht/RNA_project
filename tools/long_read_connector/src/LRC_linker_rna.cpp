@@ -218,6 +218,8 @@ public:
 		    vector<unordered_set<string>> vecSets(nbWindows);
 		    int readFraction(0);
 		    int rr(0);
+		    vector<bool> consecutiveWindows;
+		    //~ uint currentIndexVector(0);
 		    for (int vv(0); vv < (int)(*vecReads)[seqIndex].size() - smallKsize + 1; ++vv){  // get all small k-mers from the query sequence, in different windows
 			string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize));
 			vecSets[readFraction].insert(smallKmer); // for each window (readFraction), store the associated kmers
@@ -230,23 +232,46 @@ public:
 			size_t lenseq = seq.getDataSize();
 			int element((int)r->first);
 			int identity(0);
+			bool previousIdentity(false);
 			int readFraction(0);
 			int rr(0);
 			int identityPerChunk(0);
+			bool pushed(false);
 			for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
-			    
 			    string kmer((*vecReads)[element].substr(smallK, smallKsize));
 			    if (vecSets[readFraction].count(kmer)){ // check if the kmer of the associated read is in the same window than in  the query read
 				++identityPerChunk;
 			    }
+			    
+			    if (identityPerChunk == nbKmersPerChunk){
+				bool consecutive;
+				identityPerChunk = 0;
+				++ identity;
+				consecutiveWindows.push_back(true);
+				pushed = true;
+				if (consecutiveWindows.size() > 1){
+				    if (consecutiveWindows[consecutiveWindows.size() - 2]){
+					consecutive = true; // two consecutive windows found
+				    }
+				}
+				if (consecutive){ // if at least two consecutive windows are found the associated read is grouped with the query read
+					bool confirm(false);
+					if (read_group.count(seqIndex)){
+					    read_group[seqIndex].push_back({element, confirm});
+					} else {
+					    readGrouped rg({element, confirm});
+					    vector <readGrouped> v({rg});
+					    read_group[seqIndex] = {v};
+					}
+				}
+			    }
 			    if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + rr){ // switch window for the query read
 				identityPerChunk = 0;
 				++readFraction;
+				if (not pushed){
+				    consecutiveWindows.push_back(false);
+				}
 				rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + 1;
-			    }
-			    if (identityPerChunk == nbKmersPerChunk){
-				    identityPerChunk = 0;
-				    ++ identity;
 			    }
 			}
 			if (identity >= nbWindows){
@@ -262,16 +287,6 @@ public:
 				vector<int> redundant = {element};
 				readRedundancy->insert({seq.getIndex(), redundant});
 			    }
-			    // test
-			    bool confirm(false);
-			    if (read_group.count(seqIndex)){
-				read_group[seqIndex].push_back({element, confirm});
-			    } else {
-				readGrouped rg({element, confirm});
-				vector <readGrouped> v({rg});
-				read_group[seqIndex] = {v};
-			    }
-			    // end test
 			    (*vecReads)[element] = "";
 			}
 			//~ uint bound(double((uint(lenseq) - kmer_size + 1) * threshold)/(kmer_size * 100));
@@ -353,7 +368,8 @@ void LRC_linker_rna::parse_query_sequences(int threshold, uint size_window, cons
     IBank* bank = Bank::open(bankName);
     cout<<"Query "<<kmer_size<<"-mers from bank "<< bankName <<endl;
     FILE * outFile;
-    outFile = fopen (getInput()->getStr(STR_OUT_FILE).c_str(), "wb");
+    outFile = fopen ("long_read_connector_res.tmp", "wb");
+    //~ outFile = fopen (getInput()->getStr(STR_OUT_FILE).c_str(), "wb");
     string message("#query_read_id [target_read_id-kmer_span (k="+to_string(kmer_size)+")-kmer_span query percentage]* or U (unvalid read, containing not only ACGT characters or low complexity read)\n");
     fwrite((message).c_str(), sizeof(char), message.size(), outFile);
     LOCAL (bank);
@@ -398,7 +414,7 @@ void LRC_linker_rna::execute(){
 	uint size_window =  getInput()->getInt(STR_WINDOW);
 	unordered_map <uint64_t, vector<int>> readRedundancy;
 	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, nb_windows);
-	LRC_cluster_rna pseudoClust(getInput()->getStr(STR_OUT_FILE).c_str());
+	LRC_cluster_rna pseudoClust("long_read_connector_res.tmp", getInput()->getStr(STR_OUT_FILE).c_str());
 	pseudoClust.execute();
 	
 	

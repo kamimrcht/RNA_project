@@ -11,12 +11,14 @@ using namespace std;
 
 
 LRC_cluster_rna::LRC_cluster_rna(){
-	inFile = "long_read_connector_res.txt";
+	inFile = "long_read_connector_res.tmp";
+	outFile = "long_read_connector_res.txt";
 }
 
 
-LRC_cluster_rna::LRC_cluster_rna(const string& file){
-	inFile = file;
+LRC_cluster_rna::LRC_cluster_rna(const string& in, const string& out){
+	inFile = in;
+	outFile = out;
 }
 
 
@@ -99,7 +101,7 @@ void LRC_cluster_rna::write_result(ofstream& out, const vector<unordered_set<int
 }
 
 void LRC_cluster_rna::execute(){
-	ofstream outputFile("LRC_RNA_results.txt");
+	ofstream outputFile(outFile);
 	//~ string srcFileName = getInput()->getStr(STR_IN_FILE).c_str();
 	ifstream srcFile(inFile);
 	//~ ifstream srcFile(srcFileName);
