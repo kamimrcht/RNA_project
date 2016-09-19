@@ -56,22 +56,45 @@ gamma=5
 fingerprint_size=24
 kmer_threshold=75
 window_size=80
-core_used=0
+core_used=1
 prefix="long_read_connector_res"
 remove=1
 diskMode=0
 countMode=0
 
+small_k=9
+nb_small_k=120
+nb_windows=15
+
 #######################################################################
 #################### GET OPTIONS                #######################
 #######################################################################
-while getopts "hgf:q:p:k:a:s:w:t:F:G:" opt; do
+while getopts "hgf:q:p:k:a:s:w:t:F:G:K:N:W:" opt; do
 case $opt in
 
 h)
 help
 exit
 ;;
+
+
+K)
+echo "use small_k=$OPTARG" >&2
+small_k=$OPTARG
+;;
+
+
+N)
+echo "use nb_small_k=$OPTARG" >&2
+nb_small_k=$OPTARG
+;;
+
+
+W)
+echo "use nb_windows=$OPTARG" >&2
+nb_windows=$OPTARG
+;;
+
 
 G)
 echo "use gamma: $OPTARG" >&2
@@ -204,7 +227,7 @@ fi
 if [ $diskMode -eq 0 ]; then
 	cmd="${BIN_DIR}/long_read_connector"
 	# adding options
-	cmd="${cmd} -graph ${out_dsk}  -bank ${bank_set}  -out ${result_file} -kmer_threshold ${kmer_threshold} -window_size ${window_size} -fingerprint_size ${fingerprint_size} -core ${core_used} -gamma ${gamma}"
+	cmd="${cmd} -graph ${out_dsk}  -bank ${bank_set}  -out ${result_file} -kmer_threshold ${kmer_threshold} -window_size ${window_size} -fingerprint_size ${fingerprint_size} -core ${core_used} -gamma ${gamma} -small_k ${small_k} -nb_small_k ${nb_small_k} -nb_windows ${nb_windows}"
 
 #else
 	# SRC_LINKER_DISK
