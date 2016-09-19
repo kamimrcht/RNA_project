@@ -56,14 +56,13 @@ string randomSequence(const uint length){
 
 
 
+//~ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
 string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
-	//~ double substitutionRate(mutRate * ratioMutation[0]);
-	//~ double insertionRate(mutRate * ratioMutation[1]);
-	//~ double deletionRate(mutRate * ratioMutation[2]);
 	string result;
 	result.reserve(5 * referenceSequence.size());
 	for(uint i(0); i < referenceSequence.size(); ++i){
-		uint mutRate(rand() % maxMutRate);
+		uint mutRate(maxMutRate);
+		//~ uint mutRate(rand() % maxMutRate);
 		double substitutionRate(mutRate * ratioMutation[0]);
 		double insertionRate(mutRate * ratioMutation[1]);
 		double deletionRate(mutRate * ratioMutation[2]);
@@ -98,7 +97,8 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 
 
 
-vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=1, uint totalExonNumber=6, uint exonNumber=6, uint sizeExons=100){
+vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
+//~ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
 	vector<string> result;
 	vector<string> exonList;
 	for(uint i(0); i < totalExonNumber; ++i){
@@ -129,7 +129,7 @@ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=1, 
 
 
 
-void generateReads(uint numberReads, uint referencesNumber=1, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
+void generateReads(uint numberReads, uint referencesNumber=100, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(refFileName);
 	vector<vector<string>> referenceList;
