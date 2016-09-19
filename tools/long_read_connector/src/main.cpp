@@ -26,7 +26,7 @@ int main (int argc, char* argv[])
     try
     {
         // We run the tool with the provided command line arguments.
-    	SRC_linker_rna().run (argc, argv);
+    	LRC_linker_rna().run (argc, argv);
     }
     catch (Exception& e)
     {
