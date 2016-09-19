@@ -29,6 +29,18 @@ theCreator.o: theCreator.cpp
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 
+EXEC=TheCreatorRef
+
+all: $(EXEC)
+
+
+TheCreatorRef: theCreator_ref.o  
+	$(CC) -o $@ $^ $(LDFLAGS)
+	
+theCreator_ref.o: theCreator_ref.cpp  
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+
 clean:
 	rm -rf *.o
 	rm -rf $(EXEC)
