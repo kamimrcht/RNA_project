@@ -1,5 +1,5 @@
 #include <LRC_linker_rna.hpp>
-//~ #include "LRC_cluster_rna.hpp"
+#include "LRC_cluster_rna.cpp"
 #include "unordered_set"
 
 using namespace std;
@@ -27,7 +27,7 @@ uint countRm(0), prevCount(0);
 
 
 
-SRC_linker_rna::SRC_linker_rna()  : Tool ("SRC_linker_rna"){
+LRC_linker_rna::LRC_linker_rna()  : Tool ("SRC_linker_rna"){
 	// We add some custom arguments for command line interface
 	getParser()->push_back (new OptionOneParam (STR_URI_GRAPH, "graph input",   true));
 	getParser()->push_back (new OptionOneParam (STR_URI_BANK_INPUT, "bank input",    true));
@@ -46,7 +46,7 @@ SRC_linker_rna::SRC_linker_rna()  : Tool ("SRC_linker_rna"){
 }
 
 
-void SRC_linker_rna::create_quasi_dictionary(int fingerprint_size, int nbCores){
+void LRC_linker_rna::create_quasi_dictionary(int fingerprint_size, int nbCores){
 	const int display = getInput()->getInt (STR_VERBOSE);
 	// We get a handle on the HDF5 storage object.
 	// Note that we use an auto pointer since the StorageFactory dynamically allocates an instance
@@ -126,7 +126,7 @@ uint64_t string2int(const string& str){
 
 
 
-void SRC_linker_rna::fill_quasi_dictionary(const int nbCores, const string& bankName, vector <string>& v){
+void LRC_linker_rna::fill_quasi_dictionary(const int nbCores, const string& bankName, vector <string>& v){
 	bool exists;
 	IBank* bank = Bank::open (bankName);
 	cout<<"Index "<<kmer_size<<"-mers from bank "<<getInput()->getStr(STR_URI_BANK_INPUT)<<endl;
@@ -192,7 +192,6 @@ public:
 	void operator() (Sequence& seq){
 	    if (not valid_sequence(seq, kmer_size)){return;} // query sequence
 		uint64_t seqIndex(seq.getIndex() + 1);
-		//~ cout << "READ N" << seqIndex << endl;
 		if (not (*vecReads)[seqIndex].empty()){
 		    bool exists;
 		    associated_read_ids = {}; // list of the ids of reads from the bank where a kmer occurs
@@ -216,8 +215,6 @@ public:
 			++i;
 		    }
 		    int nbKmersPerChunk(nbSmallK/nbWindows);
-		    //~ int nbKmersPerChunk(nbSmallK/nbWindows - 2 * smallKsize);
-		    //~ int nbKmersPerChunk(nbSmallK/nbWindows - 3 * smallKsize);
 		    vector<unordered_set<string>> vecSets(nbWindows);
 		    int readFraction(0);
 		    int rr(0);
@@ -236,7 +233,6 @@ public:
 			int readFraction(0);
 			int rr(0);
 			int identityPerChunk(0);
-			//~ cout << "w " << readFraction << endl; 
 			for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
 			    
 			    string kmer((*vecReads)[element].substr(smallK, smallKsize));
@@ -246,17 +242,14 @@ public:
 			    if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + rr){ // switch window for the query read
 				identityPerChunk = 0;
 				++readFraction;
-				//~ cout << "w " << readFraction << endl; 
 				rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + 1;
 			    }
 			    if (identityPerChunk == nbKmersPerChunk){
-				    //~ cout << "identical read fraction " << readFraction << endl;
 				    identityPerChunk = 0;
 				    ++ identity;
 			    }
 			}
 			if (identity >= nbWindows){
-			//~ if (identity >= nbWindows - (nbWindows/10)){
 			    for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
 				string kmer((*vecReads)[element].substr(toErase, kmer_size));
 				uint64_t kmerInt(string2int(kmer));
@@ -270,62 +263,62 @@ public:
 				readRedundancy->insert({seq.getIndex(), redundant});
 			    }
 			    // test
-			    //~ bool confirm(false);
-			    //~ if (read_group.count(seqIndex)){
-				//~ read_group[seqIndex].push_back({element, confirm});
-			    //~ } else {
-				//~ readGrouped rg({element, confirm});
-				//~ vector <readGrouped> v({rg});
-				//~ read_group[seqIndex] = {v};
-			    //~ }
+			    bool confirm(false);
+			    if (read_group.count(seqIndex)){
+				read_group[seqIndex].push_back({element, confirm});
+			    } else {
+				readGrouped rg({element, confirm});
+				vector <readGrouped> v({rg});
+				read_group[seqIndex] = {v};
+			    }
 			    // end test
 			    (*vecReads)[element] = "";
 			}
-			uint bound(double((uint(lenseq) - kmer_size + 1) * threshold)/(kmer_size * 100));
-			if (r->second.size() >= bound){
-			    vector<uint> presence(uint(lenseq) - kmer_size + 1, 0);
-			    uint count(0);
-			    bool found(false);
-			    uint startKmerPosi(0);
-			    uint endKmerPosi(0);
-			    for (uint j(0); j < r->second.size(); ++j){
-				presence[r->second[j]] = 1;
-			    }
-			    pair <string, string> matchingRegion;
-			    uint start(0);
-			    for (uint w(0); w < presence.size(); ++w){
-				if (w < size_window){
-				    if (presence[w] == 1){
-					endKmerPosi = w;
-					++count;
-				    }
-				} else {
-				    start = w - size_window + 1;
-				    endKmerPosi = w;
-				    startKmerPosi = start;
-				    if (presence[start - 1] == 1 and count > 0){
-					--count;
-				    }
-				    if (presence[w] == 1){
-					++count;
-				    }
-				}
-				if (uint(double(count) * kmer_size / (size_window - kmer_size + 1) * 100) >= threshold){
-				    found = true;
-				    break;
-				} 
-			    }
-			    if (found){
-				bool confirm(false);
-				if (read_group.count(seqIndex)){
-				    read_group[seqIndex].push_back({r->first, confirm});
-				} else {
-				    readGrouped rg({r->first, confirm});
-				    vector <readGrouped> v({rg});
-				    read_group[seqIndex] = {v};
-				}
-			    }
-			}
+			//~ uint bound(double((uint(lenseq) - kmer_size + 1) * threshold)/(kmer_size * 100));
+			//~ if (r->second.size() >= bound){
+			    //~ vector<uint> presence(uint(lenseq) - kmer_size + 1, 0);
+			    //~ uint count(0);
+			    //~ bool found(false);
+			    //~ uint startKmerPosi(0);
+			    //~ uint endKmerPosi(0);
+			    //~ for (uint j(0); j < r->second.size(); ++j){
+				//~ presence[r->second[j]] = 1;
+			    //~ }
+			    //~ pair <string, string> matchingRegion;
+			    //~ uint start(0);
+			    //~ for (uint w(0); w < presence.size(); ++w){
+				//~ if (w < size_window){
+				    //~ if (presence[w] == 1){
+					//~ endKmerPosi = w;
+					//~ ++count;
+				    //~ }
+				//~ } else {
+				    //~ start = w - size_window + 1;
+				    //~ endKmerPosi = w;
+				    //~ startKmerPosi = start;
+				    //~ if (presence[start - 1] == 1 and count > 0){
+					//~ --count;
+				    //~ }
+				    //~ if (presence[w] == 1){
+					//~ ++count;
+				    //~ }
+				//~ }
+				//~ if (uint(double(count) * kmer_size / (size_window - kmer_size + 1) * 100) >= threshold){
+				    //~ found = true;
+				    //~ break;
+				//~ } 
+			    //~ }
+			    //~ if (found){
+				//~ bool confirm(false);
+				//~ if (read_group.count(seqIndex)){
+				    //~ read_group[seqIndex].push_back({r->first, confirm});
+				//~ } else {
+				    //~ readGrouped rg({r->first, confirm});
+				    //~ vector <readGrouped> v({rg});
+				    //~ read_group[seqIndex] = {v};
+				//~ }
+			    //~ }
+			//~ }
 		    }
 		string toPrint;
 		bool read_id_printed = false; // Print (and sync file) only if the read is similar to something.
@@ -356,7 +349,7 @@ public:
 
 
 
-void SRC_linker_rna::parse_query_sequences(int threshold, uint size_window, const int nbCores, const string& bankName, vector <string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy, int smallK, int nbSmallK, int nbWindows){
+void LRC_linker_rna::parse_query_sequences(int threshold, uint size_window, const int nbCores, const string& bankName, vector <string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy, int smallK, int nbSmallK, int nbWindows){
     IBank* bank = Bank::open(bankName);
     cout<<"Query "<<kmer_size<<"-mers from bank "<< bankName <<endl;
     FILE * outFile;
@@ -377,17 +370,17 @@ void SRC_linker_rna::parse_query_sequences(int threshold, uint size_window, cons
 
 
 
-void SRC_linker_rna::execute(){
+void LRC_linker_rna::execute(){
 	int nbCores = getInput()->getInt(STR_CORE);
 	int fingerprint_size = getInput()->getInt(STR_FINGERPRINT);
 	gamma_value = getInput()->getInt(STR_GAMMA);
 
-	int small_k =  9;
-	int nb_small_k = 100;
-	int nb_windows = 41;
-	//~ int small_k = getInput()->getInt(STR_SMALLK);
-	//~ int nb_small_k = getInput()->getInt(STR_NBSMALLK);
-	//~ int nb_windows = getInput()->getInt(STR_NBWINDOWS);
+	//~ int small_k =  9;
+	//~ int nb_small_k = 100;
+	//~ int nb_windows = 41;
+	int small_k = getInput()->getInt(STR_SMALLK);
+	int nb_small_k = getInput()->getInt(STR_NBSMALLK);
+	int nb_windows = getInput()->getInt(STR_NBWINDOWS);
 	// IMPORTANT NOTE:
 	// Actually, during the filling of the dictionary values, one may fall on non solid non indexed kmers
 	// that are quasi dictionary false positives (ven with a non null fingerprint. This means that one nevers knows in advance how much
@@ -405,7 +398,8 @@ void SRC_linker_rna::execute(){
 	uint size_window =  getInput()->getInt(STR_WINDOW);
 	unordered_map <uint64_t, vector<int>> readRedundancy;
 	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, nb_windows);
-
+	LRC_cluster_rna pseudoClust(getInput()->getStr(STR_OUT_FILE).c_str());
+	pseudoClust.execute();
 	
 	
 	getInfo()->add (1, &LibraryInfo::getInfo());

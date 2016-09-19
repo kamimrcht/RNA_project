@@ -43,7 +43,7 @@ struct readGrouped{
 	bool confirmed;
 };
 
-class SRC_linker_rna : public Tool
+class LRC_linker_rna : public Tool
 {
 	
 private:
@@ -59,7 +59,7 @@ private:
 public:
 	
     // Constructor
-	SRC_linker_rna ();
+	LRC_linker_rna ();
 
     // Actual job done by the tool is here
 
