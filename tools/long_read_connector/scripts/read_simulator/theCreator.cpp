@@ -129,7 +129,7 @@ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, 
 
 
 
-void generateReads(uint numberReads, uint referencesNumber=100, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
+void generateReads(uint numberReads, uint referencesNumber=1000, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(refFileName);
 	vector<vector<string>> referenceList;
@@ -157,7 +157,7 @@ void generateReads(uint numberReads, uint referencesNumber=100, const string& ou
 int main(int argc, char ** argv){
 	srand (time(NULL));
 	auto startChrono = chrono::system_clock::now();
-	generateReads(1000);
+	generateReads(100000);
 	auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 	cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
 	return 0;
