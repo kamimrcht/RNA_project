@@ -25,7 +25,7 @@ static const char* STR_NBWINDOWS = "-nb_windows";
 
 
 uint countRm(0), prevCount(0);
-mutex mutex1,mutex2,mutex3;
+mutex mutex1,mutex2,mutex3,mutex4;
 
 
 LRC_linker_rna::LRC_linker_rna()  : Tool ("SRC_linker_rna"){
@@ -269,6 +269,7 @@ public:
 						}
 						if (consecutive){ // if at least two consecutive windows are found the associated read is grouped with the query read
 							bool confirm(false);
+							mutex4.lock();
 							if (read_group.count(seqIndex)){
 								read_group[seqIndex].push_back({element, confirm});
 							} else {
@@ -276,6 +277,7 @@ public:
 								vector <readGrouped> v({rg});
 								read_group[seqIndex] = {v};
 							}
+							mutex4.unlock();
 						}
 					}
 					if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + rr){ // switch window for the query read

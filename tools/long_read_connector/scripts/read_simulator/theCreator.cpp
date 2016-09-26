@@ -50,7 +50,7 @@ string randomSequence(const uint length){
 	string result(length, 'A');
 	for(uint i(0); i < length; ++i){
 		result[i] = randomNucleotide();
-	}	
+	}
 	return result;
 }
 
@@ -78,7 +78,7 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 		}
 		if(dice < deletionRate+substitutionRate){
 			//DELETION
-			
+
 			continue;
 		}
 		if(dice < deletionRate + substitutionRate + insertionRate){
@@ -90,7 +90,7 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 		}
 		//NO ERROR
 		result.push_back(referenceSequence[i]);
-		
+
 	}
 	return result;
 }
@@ -140,7 +140,7 @@ void generateReads(uint numberReads, uint referencesNumber=1000, const string& o
 			outRef << referenceList[i][ii] << endl;
 		}
 	}
-	
+
 	string refRead,realRead;
 	for(uint i(0); i < numberReads; ++i){
 		uint dice1(rand() % referencesNumber);
@@ -157,7 +157,7 @@ void generateReads(uint numberReads, uint referencesNumber=1000, const string& o
 int main(int argc, char ** argv){
 	srand (time(NULL));
 	auto startChrono = chrono::system_clock::now();
-	generateReads(100000);
+	generateReads(200000);
 	auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 	cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
 	return 0;
