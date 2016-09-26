@@ -25,7 +25,7 @@ static const char* STR_NBWINDOWS = "-nb_windows";
 
 
 uint countRm(0), prevCount(0);
-mutex mutex1,mutex2;
+mutex mutex1,mutex2,mutex3;
 
 
 LRC_linker_rna::LRC_linker_rna()  : Tool ("SRC_linker_rna"){
@@ -38,8 +38,8 @@ LRC_linker_rna::LRC_linker_rna()  : Tool ("SRC_linker_rna"){
 	getParser()->push_back (new OptionOneParam (STR_GAMMA, "gamma value",    false, "2"));
 	getParser()->push_back (new OptionOneParam (STR_FINGERPRINT, "fingerprint size",    false, "32"));
 	getParser()->push_back (new OptionOneParam (STR_CORE, "Number of thread",    false, "1"));
-	
-	
+
+
 	getParser()->push_back (new OptionOneParam (STR_SMALLK, "small k value",    false, "9"));
 	getParser()->push_back (new OptionOneParam (STR_NBSMALLK, "nb of small k mers to look for",    false, "120"));
 	getParser()->push_back (new OptionOneParam (STR_NBWINDOWS, "nb of windows",    false, "15"));
@@ -74,7 +74,7 @@ struct FunctorIndexer{
 	int kmer_size;
 	ISynchronizer* synchro;
 	vector<string>& vec;
-	
+
 	FunctorIndexer(quasidictionaryVectorKeyGeneric <IteratorKmerH5Wrapper, u_int32_t >& quasiDico, int kmer_size, vector<string>& vec, ISynchronizer* synchro)  :  quasiDico(quasiDico), kmer_size(kmer_size), synchro(synchro), vec(vec) {
 	}
 
@@ -160,8 +160,8 @@ public:
 	int smallKsize;
 	int nbSmallK;
 	int nbWindows;
-    
-    
+
+
 	FunctorQueryMatchingRegions(const FunctorQueryMatchingRegions& lol) // used by the dispatcher
 	{
 		size_window=lol.size_window;
@@ -183,16 +183,17 @@ public:
 		nbSmallK = lol.nbSmallK;
 		nbWindows = lol.nbWindows;
 	}
-	
-    
+
+
 	FunctorQueryMatchingRegions(ISynchronizer* synchro, FILE* outFile,  const int kmer_size,  quasidictionaryVectorKeyGeneric <IteratorKmerH5Wrapper, u_int32_t >* quasiDico, const int threshold, const uint size_window, std::unordered_map<uint64_t, vector<uint>>& reads_sharing_kmer_2_positions, std::unordered_map<uint64_t, vector<readGrouped>> read_group, vector<string>* vecReads, unordered_map<uint64_t, vector<int>>* readRedundancy, int smallKsize, int nbSmallK, int nbWindows)
 	: synchro(synchro), outFile(outFile), kmer_size(kmer_size), quasiDico(quasiDico), threshold(threshold),  size_window(size_window), reads_sharing_kmer_2_positions(reads_sharing_kmer_2_positions), read_group(read_group), vecReads(vecReads), readRedundancy(readRedundancy), smallKsize(smallKsize), nbSmallK(nbSmallK), nbWindows(nbWindows){
 		model=Kmer<KMER_SPAN(1)>::ModelCanonical (kmer_size);
 	}
-	
-    
+
+
 	FunctorQueryMatchingRegions(){}
 	void operator() (Sequence& seq){
+		//~ return;
 	    if (not valid_sequence(seq, kmer_size)){return;} // query sequence
 		uint64_t seqIndex(seq.getIndex() + 1);
 		if (not (*vecReads)[seqIndex].empty()){
@@ -205,15 +206,15 @@ public:
 				quasiDico->get_value((*itKmer)->value().getVal(), exists, associated_read_ids); // warning: a same read id can be stored several times - indexes of reads sharing kmers with query are stored in associated_read_ids
 				if(!exists) {++i; continue;}
 				for (uint r(0); r < associated_read_ids.size(); ++r){ // map: associated_read to vector of kmers
-					//~ if (reads_sharing_kmer_2_positions.count(associated_read_ids[r])){
-						//~ if (i > reads_sharing_kmer_2_positions[associated_read_ids[r]][reads_sharing_kmer_2_positions[associated_read_ids[r]].size() - 1]) { /*because of the warning above */
-							//~ reads_sharing_kmer_2_positions[associated_read_ids[r]].push_back(i);
-						//~ }
-					//~ } else {
-					if (associated_read_ids[r] != seq.getIndex() + 1){  // we dont want to store the info about a read similar to itself
-						reads_sharing_kmer_2_positions[associated_read_ids[r]].push_back(i);
+					if (reads_sharing_kmer_2_positions.count(associated_read_ids[r])){
+						if (i > reads_sharing_kmer_2_positions[associated_read_ids[r]][reads_sharing_kmer_2_positions[associated_read_ids[r]].size() - 1]) { /*because of the warning above */
+							reads_sharing_kmer_2_positions[associated_read_ids[r]].push_back(i);
+						}
+					} else {
+						if (associated_read_ids[r] != seq.getIndex() + 1){  // we dont want to store the info about a read similar to itself
+							reads_sharing_kmer_2_positions[associated_read_ids[r]].push_back(i);
+						}
 					}
-					//~ }
 				}
 				++i;
 		    }
@@ -254,7 +255,7 @@ public:
 					if (vecSets[readFraction].count(kmer)){ // check if the kmer of the associated read is in the same window than in  the query read
 						++identityPerChunk;
 					}
-					
+
 					if (identityPerChunk == nbKmersPerChunk){
 						bool consecutive;
 						identityPerChunk = 0;
@@ -311,10 +312,10 @@ public:
 					toPrint += to_string(read_group[seqIndex][i].index) + " ";
 				}
 				if (read_id_printed){
-				synchro->lock();
+				mutex3.lock();
 				toPrint += "\n";
 				fwrite(toPrint.c_str(), sizeof(char), toPrint.size(), outFile);
-				synchro->unlock();
+				mutex3.unlock();
 				}
 			}
 			if (countRm > prevCount){
@@ -377,8 +378,8 @@ void LRC_linker_rna::execute(){
 	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, nb_windows);
 	LRC_pseudocluster_rna pseudoClust("long_read_connector_res.tmp", getInput()->getStr(STR_OUT_FILE).c_str());
 	pseudoClust.execute();
-	
-	
+
+
 	getInfo()->add (1, &LibraryInfo::getInfo());
 	getInfo()->add (1, "input");
 	getInfo()->add (2, "Sequences bank",  "%s",  getInput()->getStr(STR_URI_BANK_INPUT).c_str());
