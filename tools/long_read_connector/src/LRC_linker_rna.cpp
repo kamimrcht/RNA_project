@@ -1,5 +1,5 @@
 #include <LRC_linker_rna.hpp>
-#include "LRC_pseudocluster_rna.cpp"
+#include "LRC_pseudocluster_rna.hpp"
 #include "unordered_set"
 #include "mutex"
 
