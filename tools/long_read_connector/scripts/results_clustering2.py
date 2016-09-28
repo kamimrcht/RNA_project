@@ -18,29 +18,21 @@ def readSRCFile(fileName, clusters):
 
             
 def readSimulFile(fileName, clustersSimu,  types):
-#~ def readSimulFile(fileName, clustersSimu, typesSimu):
     simulFile = open(fileName, "r")
     readNumber = 0
     for line in simulFile.readlines():
         if line[0] == '>': #header >referenceNumber:1 alternativeNumber1
-            #~ typ = line.split(' ')[2]
-            #~ ref = line.split(' ')[0].split(':')[1]
             ref = line.split(' ')[0].split(':')[1]
             if ref in clustersSimu.iterkeys():
                 clustersSimu[ref].add(readNumber)
             else:
                 clustersSimu[ref] = set([readNumber])
-                types[ref] = line.split(' ')[3][:-1]
+                types[ref] = line.split(' ')[2][:-1]
             readNumber += 1
-            #~ typesSimu[ref] = 
-                
-
-        
-            
 
 def validateResults(clustersLRC, clustersSimu,  outfile, types):
-    rec = {"highExpression":[], "shallowExpression":[], "regularExpression":[]}
-    pre = {"highExpression":[], "shallowExpression":[], "regularExpression":[]}
+    rec = {"highExpression":[], "lowExpression":[], "regularExpression":[]}
+    pre = {"highExpression":[], "lowExpression":[], "regularExpression":[]}
     GLOBALR = []
     GLOBALP = []
     for keyRefSimu in clustersSimu.iterkeys():
@@ -48,7 +40,7 @@ def validateResults(clustersLRC, clustersSimu,  outfile, types):
         recalls = []
         precisions = []
         typeExpr = types[keyRefSimu]
-        
+        #~ print typeExpr
         for keyLRC in clustersLRC.iterkeys() :
             if keyLRC in clustersSimu[keyRefSimu]:
                 intersec = len(clustersLRC[keyLRC].intersection(clustersSimu[keyRefSimu]))
@@ -61,20 +53,20 @@ def validateResults(clustersLRC, clustersSimu,  outfile, types):
 
         if len(readsFound) != 0:
             RECALLS = round(len(readsFound) * 1.0 /len(clustersSimu[keyRefSimu]) * 100, 2)
-            rec[typeExpr].append(RECALLS)
         else:
             RECALLS = 0
-            rec[typeExpr].append(0)
         if len(precisions) != 0:
             PREC = round(sum(precisions) * 1.0/len(precisions), 2)
-            pre[typeExpr].append(PREC)
+            
         else:
             PREC= "NA"
         
         #~ print "gene ", typeExpr, keyRefSimu,RECALLS, PREC
         GLOBALR.append(RECALLS)
+        rec[typeExpr].append(RECALLS)
         if PREC != "NA":
             GLOBALP.append(PREC)
+            pre[typeExpr].append(PREC)
     for key in rec.iterkeys():
         if len(rec[key]) != 0:
             if len(pre[key]) != 0:
