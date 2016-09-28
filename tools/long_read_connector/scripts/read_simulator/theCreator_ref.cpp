@@ -98,7 +98,7 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 
 
 //~ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
-vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=5, uint exonNumber=5, uint sizeExons=100){
+vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=11, uint exonNumber=10, uint sizeExons=100){
 	string sequence;
 	vector<vector<string>> result;
 	uint nbRef(0);
@@ -121,7 +121,6 @@ vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile
 			while (i < totalExonNumber and position < sequence.size()){ // creation of exons from genomic sequence
 				string exon(sequence.substr(position, lengthExons));
 				exonList.push_back(exon);
-				//~ cout << "size exon" << exon.size() << endl;
 				position += lengthExons;
 				++i;
 			}
@@ -133,14 +132,11 @@ vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile
 				transcript = "";
 				selectedExons = {};
 				while(selectedExons.size() != transcriptExonNumber){
-					selectedExons.insert(rand() % exonList.size());
-					//~ selectedExons.insert(rand() % totalExonNumber);
-					
+					selectedExons.insert(rand() % exonList.size());					
 				}
 				for(uint ii(0); ii < exonList.size(); ++ii){
 					if(selectedExons.count(ii) == 1){
 						transcript += exonList[ii];
-						//~ cout << transcript.size() << endl;
 					}
 				}
 				transcriptList.push_back(transcript);
@@ -153,11 +149,13 @@ vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile
 
 
 unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numberReads){
-	uint nbHighlyExpressed(numberReads/referencesNumber * 0.1); // code 0
-	uint nbMidExpressed(numberReads/referencesNumber * 0.4); // code 1
+	uint nbMidExpressed(referencesNumber * 0.6); // code 1
+	uint nbHighlyExpressed(referencesNumber * 0.1); // code 0
+
+	
+	
 	unordered_map<uint, uint> result;
-	cout << nbHighlyExpressed << " " << nbMidExpressed << " " <<  numberReads - nbMidExpressed - nbHighlyExpressed << endl;
-	//~ uint nbLowlyExpressed(numberReads - nbMidExpressed - nbHighlyExpressed); // code 2
+	cout << "high:" << nbHighlyExpressed << " medium:" << nbMidExpressed << " low:" <<  referencesNumber - nbMidExpressed - nbHighlyExpressed << endl;
 	unordered_set<uint> refs;
 	for (uint i(0); i < referencesNumber; ++i){
 		refs.insert(i);
@@ -166,17 +164,17 @@ unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numbe
 	for (auto j (refs.begin()); j != refs.end(), i < nbHighlyExpressed;){
 			result.insert({*j, 0});
 			j = refs.erase(j);
-			cout<< refs.size() << endl;
 			++i;
 	}
 	i = 0;
 	for (auto j (refs.begin()); j != refs.end(), i < nbMidExpressed;){
 			result.insert({*j, 1});
 			j = refs.erase(j);
-			cout<< refs.size() << endl;
 			++i;
 	}
+	cout << "check size " << refs.size();
 	for (auto j (refs.begin()); j != refs.end(); ++j){
+			
 			result.insert({*j, 2});
 	}
 	return result;
@@ -184,18 +182,19 @@ unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numbe
 
 
 
-void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=5000, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
+void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=700, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(outRefFileName);
 	vector<vector<string>> referenceList(generateAlternativeTranscriptReferences(inRef, referencesNumber));
 
-	int nbReadsPerGene(numberReads / referencesNumber);
-	int rare(nbReadsPerGene*0.1 + 1);
-	int regular(nbReadsPerGene*0.3 + 1);
-	int highly(nbReadsPerGene - rare - regular);
+	int highly(numberReads*0.5);
+	int regular(numberReads*0.4);
+	int rare(numberReads - highly - regular);
+	
+	
 	unordered_map<uint, uint> geneExpression(geneExpressionChunks(referencesNumber, numberReads));
 
-	cout << numberReads << " " << nbReadsPerGene << " "<< rare << " "<< regular << " "<< highly << endl;
+	cout << "nb reads:" << numberReads << " nb rare reads:" << rare << " nb regular reads:"<< regular << " nb high reads:"<< highly << endl;
 	
 	for(uint i(0);i < referenceList.size(); ++i){
 		string expr;
@@ -211,54 +210,40 @@ void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=5000
 			break;
 		}
 		for(uint ii(0); ii<referenceList[i].size(); ++ii){
-			if (ii == 0){
-				outRef << ">referenceNumber:" << i << " alternativeNumber" << ii << " rareTranscript " <<  expr <<endl;
-			} else if (ii == referenceList[i].size()-1) {
-				outRef << ">referenceNumber:" << i << " alternativeNumber" << ii << " frequentTranscript " <<  expr <<endl;
-			} else {
-				outRef << ">referenceNumber:" << i << " alternativeNumber:" << ii <<  " regularTranscript " << expr << endl;
-			}
+			outRef << ">referenceNumber:" << i << " alternativeNumber" << ii << " " <<  expr <<endl;
 			outRef << referenceList[i][ii] << endl;
 		}
 	}
 	
 	string refRead,realRead;
 
-	for (uint i(0); i < referencesNumber; ++i){
+	int hi(0), re(0), ra(0);
+	while (hi < highly or re < regular or ra < rare){
 		uint dice1(rand() % referencesNumber);
-		string expression;
-		switch (geneExpression[dice1]){
-			case 0:
-				expression = "highExpression";
-				break;
-			case 1:
-				expression = "regularExpression";
-				break;
-			case 2:
-				expression = "shallowExpression";
-				break;
-		}
-		
-		for (int ra(0); ra < rare; ++ra){
-			//~ uint dice1(rand() % referencesNumber);
-			refRead = referenceList[dice1][0];
-			realRead = mutateSequence(refRead);
-			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << 0 <<  " rareTranscript "  << expression <<endl;
-			out << realRead << endl;
-		}
-		for (int re(0); re < regular; ++re){
-			//~ uint dice1(rand() % referencesNumber);
-			uint dice2(rand() % (referenceList[dice1].size() - 2) +1);
+		uint dice2(rand() % (referenceList[dice1].size() ));
+		int expr(geneExpression[dice1]);
+		if (expr == 0 and hi < highly){
+			++hi;
+			string expression = "highExpression";
 			refRead = referenceList[dice1][dice2];
 			realRead = mutateSequence(refRead);
-			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << dice2 <<  " regularTranscript " << expression <<endl;
+			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
 			out << realRead << endl;
 		}
-		for (int hi(0); hi < highly; ++hi){
-			//~ uint dice1(rand() % referencesNumber);
-			refRead = referenceList[dice1][referenceList[dice1].size()-1];
+		if (expr == 1 and re < regular){
+			++re;
+			string expression = "regularExpression";
+			refRead = referenceList[dice1][dice2];
 			realRead = mutateSequence(refRead);
-			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << referenceList[dice1].size()-1 <<  " frequentTranscript " <<  expression << endl;
+			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
+			out << realRead << endl;
+		}
+		if (expr == 2 and ra < rare){
+			++ra;
+			string expression = "lowExpression";
+			refRead = referenceList[dice1][dice2];
+			realRead = mutateSequence(refRead);
+			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
 			out << realRead << endl;
 		}
 	}
