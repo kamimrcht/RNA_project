@@ -1,5 +1,5 @@
 #include <LRC_linker_rna.hpp>
-#include "LRC_pseudocluster_rna.hpp"
+#include "LRC_pseudocluster_rna.cpp"
 #include "unordered_set"
 #include "mutex"
 
@@ -25,7 +25,7 @@ static const char* STR_NBWINDOWS = "-nb_windows";
 
 
 uint countRm(0), prevCount(0);
-mutex mutex1,mutex2,mutex3,mutex4;
+mutex mutex1,mutex2,mutex3,mutex4, mutex5;
 
 
 LRC_linker_rna::LRC_linker_rna()  : Tool ("SRC_linker_rna"){
@@ -218,91 +218,206 @@ public:
 				}
 				++i;
 		    }
+		    uint lenSeq((uint)(*vecReads)[seqIndex].size());
 		    vector<uint> toErase;
+		    bool found(false);
 		    for ( auto it = reads_sharing_kmer_2_positions.begin(); it != reads_sharing_kmer_2_positions.end(); ++it ){
-				if(it->second.size()<10){//TODO 3 is arbitrary threshold
-					toErase.push_back(it->first);
-				}
+			found = false;
+			int element((int)it->first);
+			if(it->second.size() < 10){//TODO 3 is arbitrary threshold
+			    toErase.push_back(it->first);
 			}
-			for(uint locali(0);locali<toErase.size();++locali){
-				reads_sharing_kmer_2_positions.erase(locali);
-			}
-		    int nbKmersPerChunk(nbSmallK/nbWindows);
-		    vector<unordered_set<string>> vecSets(nbWindows);
-		    int readFraction(0);
-		    int rr(0);
-		    vector<bool> consecutiveWindows;
-		    //~ uint currentIndexVector(0);
-		    for (int vv(0); vv < (int)(*vecReads)[seqIndex].size() - smallKsize + 1; ++vv){  // get all small k-mers from the query sequence, in different windows
-				string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize));
-				vecSets[readFraction].insert(smallKmer); // for each window (readFraction), store the associated kmers
-				if (vv > ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + rr){
-					++readFraction;
-					rr += ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + 1;
+			if (it->second.size() > (lenSeq - kmer_size + 1)*0.1 and  (*vecReads)[element].size()*0.95 <= lenSeq and  lenSeq <= (*vecReads)[element].size()*1.05 ){ // todo bad threshold
+			    found = true;
+			    for (int toEraseFromQD(0); toEraseFromQD < (int)(*vecReads)[element].size() - kmer_size + 1; ++toEraseFromQD){
+				    string kmer((*vecReads)[element].substr(toEraseFromQD, kmer_size));
+				    uint64_t kmerInt(string2int(kmer));
+				    uint32_t elem(it->first);
+				    mutex1.lock();
+				    quasiDico->remove(kmerInt, elem, countRm);  
+				    mutex1.unlock();
 				}
+				mutex2.lock();
+				(*vecReads)[element] = "";
+				mutex2.unlock();
+			}
+			if (found){
+				bool confirm(false);
+				mutex5.lock();
+				if (read_group.count(seqIndex)){
+				    read_group[seqIndex].push_back({element, confirm});
+				} else {
+				    readGrouped rg({element, confirm});
+				    vector <readGrouped> v({rg});
+				    read_group[seqIndex] = {v};
+				}
+				mutex5.unlock();
+			}
+			
 		    }
-		    for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){ // for all associated reads
-				size_t lenseq = seq.getDataSize();
-				int element((int)r->first);
-				int identity(0);
-				bool previousIdentity(false);
-				int readFraction(0);
-				int rr(0);
-				int identityPerChunk(0);
-				bool pushed(false);
-				for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
-					string kmer((*vecReads)[element].substr(smallK, smallKsize));
-					if (vecSets[readFraction].count(kmer)){ // check if the kmer of the associated read is in the same window than in  the query read
-						++identityPerChunk;
-					}
-
-					if (identityPerChunk == nbKmersPerChunk){
-						bool consecutive;
-						identityPerChunk = 0;
-						++ identity;
-						consecutiveWindows.push_back(true);
-						pushed = true;
-						if (consecutiveWindows.size() > 1){
-							if (consecutiveWindows[consecutiveWindows.size() - 2]){
-								consecutive = true; // two consecutive windows found
-							}
-						}
-						if (consecutive){ // if at least two consecutive windows are found the associated read is grouped with the query read
-							bool confirm(false);
-							mutex4.lock();
-							if (read_group.count(seqIndex)){
-								read_group[seqIndex].push_back({element, confirm});
-							} else {
-								readGrouped rg({element, confirm});
-								vector <readGrouped> v({rg});
-								read_group[seqIndex] = {v};
-							}
-							mutex4.unlock();
-						}
-					}
-					if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + rr){ // switch window for the query read
-						identityPerChunk = 0;
-						++readFraction;
-						if (not pushed){
-							consecutiveWindows.push_back(false);
-						}
-						rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + 1;
-					}
+		    for(uint locali(0); locali < toErase.size(); ++locali){
+			reads_sharing_kmer_2_positions.erase(locali);
+		    }
+		    //~ int nbKmersPerChunk(nbSmallK/nbWindows);
+		    //~ vector<unordered_set<string>> vecSets(nbWindows);
+		    //~ int readFraction(0);
+		    //~ int rr(0);
+		    //~ vector<bool> consecutiveWindows;
+		    //~ uint lenSeq((uint)(*vecReads)[seqIndex].size());
+		    vector <uint> matrix(uint(lenSeq) * reads_sharing_kmer_2_positions.size(), 0);
+		    //~ uint indexIMatrix(0);
+		    uint indexJMatrix(0);
+		    //~ vector<uint> presence(size_window, 0);
+		    for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){
+			found = false;
+			int element((int)r->first);
+			if (not (*vecReads)[element].empty()){
+			    unordered_set <string> kmers_read_shared;
+			    for (uint v(0); v < (*vecReads)[element].size() - smallKsize + 1; ++v){
+				string kmer((*vecReads)[element].substr(v, smallKsize));
+				kmers_read_shared.insert(kmer);
+			    }
+			    for (uint vv(0); vv < lenSeq - smallKsize + 1; ++vv){
+				string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize)); // get all small k-mers from the query sequence
+				if (kmers_read_shared.count(smallKmer)){
+				    matrix[vv + lenSeq * indexJMatrix] = 1;
 				}
-				if (identity >= nbWindows){
-					for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
-						string kmer((*vecReads)[element].substr(toErase, kmer_size));
-						uint64_t kmerInt(string2int(kmer));
-						uint32_t elem(r->first);
-						mutex1.lock();
-						quasiDico->remove(kmerInt, elem, countRm);  // if a read is strongly alike another, we will not treat it but use the results already computed
-						mutex1.unlock();
-					}
-					mutex2.lock();
-					(*vecReads)[element] = "";
-					mutex2.unlock();
+			    }
+			    uint start(0);
+			    uint count(0);
+			    uint startKmerPosi(0);
+			    uint endKmerPosi(0);
+			    uint nbWindowsHit(0);
+			    for (uint w(0); w < lenSeq - smallKsize + 1; ++w){
+				
+				if (w < nbWindows){
+				    if (matrix[w + lenSeq * indexJMatrix] == 1){
+					endKmerPosi = w;
+					++count;
+				    }
+			       
+				} else {
+				    start = w - nbWindows + 1;
+				    endKmerPosi = w;
+				    startKmerPosi = start;
+				    if (matrix[start - 1 + lenSeq * indexJMatrix] == 1 and count > 0){
+					--count;
+				    }
+				    if (matrix[w  + lenSeq * indexJMatrix] == 1){
+					++count;
+				    }
 				}
+				if (count > nbSmallK){
+				//~ if (uint(double(count) * kmer_size / (size_window - kmer_size + 1) * 100) >= threshold){ // todo: bad threshold
+				    found = true;
+				    ++nbWindowsHit;
+				    break;
+				}
+				//~ cout << "*****" <<nbWindowsHit << " " << (lenSeq - nbWindows + 1)*0.9 << endl;
+				//~ if (nbWindowsHit > (lenSeq - nbWindows + 1)*0.9){ // if a read is strongly alike another, we will not treat it but use the results already computed
+				    //~ found = true;
+				    //~ for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
+					//~ string kmer((*vecReads)[element].substr(toErase, kmer_size));
+					//~ uint64_t kmerInt(string2int(kmer));
+					//~ uint32_t elem(r->first);
+					//~ mutex1.lock();
+					//~ quasiDico->remove(kmerInt, elem, countRm);  
+					//~ mutex1.unlock();
+				    //~ }
+				    //~ mutex2.lock();
+				    //~ (*vecReads)[element] = "";
+				    //~ mutex2.unlock();
+				//~ }
+				
+			    }
+			    if (found){
+				    bool confirm(false);
+				    mutex4.lock();
+				    if (read_group.count(seqIndex)){
+					read_group[seqIndex].push_back({element, confirm});
+				    } else {
+					readGrouped rg({element, confirm});
+					vector <readGrouped> v({rg});
+					read_group[seqIndex] = {v};
+				    }
+				    mutex4.unlock();
+			    }
+				//~ vecSets[readFraction].insert(smallKmer); // for each window (readFraction), store the associated kmers
+				//~ if (vv > ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + rr){
+					//~ ++readFraction;
+					//~ rr += ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + 1;
+				//~ }
+			    ++indexJMatrix; // one j per read recruited
 			}
+		    }
+		    //~ for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){ // for all associated reads
+			//~ for (int vv(0); vv < (int)(*vecReads)[seqIndex].size() - smallKsize + 1; ++vv){
+			    //~ string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize));
+			//~ }
+
+
+			
+				//~ size_t lenseq = seq.getDataSize();
+				//~ int element((int)r->first);
+				//~ int identity(0);
+				//~ bool previousIdentity(false);
+				//~ int readFraction(0);
+				//~ int rr(0);
+				//~ int identityPerChunk(0);
+				//~ bool pushed(false);
+				//~ for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
+					//~ string kmer((*vecReads)[element].substr(smallK, smallKsize));
+					//~ if (vecSets[readFraction].count(kmer)){ // check if the kmer of the associated read is in the same window than in  the query read
+						//~ ++identityPerChunk;
+					//~ }
+
+					//~ if (identityPerChunk == nbKmersPerChunk){
+						//~ bool consecutive;
+						//~ identityPerChunk = 0;
+						//~ ++ identity;
+						//~ consecutiveWindows.push_back(true);
+						//~ pushed = true;
+						//~ if (consecutiveWindows.size() > 1){
+							//~ if (consecutiveWindows[consecutiveWindows.size() - 2]){
+								//~ consecutive = true; // two consecutive windows found
+							//~ }
+						//~ }
+						//~ if (consecutive){ // if at least two consecutive windows are found the associated read is grouped with the query read
+							//~ bool confirm(false);
+							//~ mutex4.lock();
+							//~ if (read_group.count(seqIndex)){
+								//~ read_group[seqIndex].push_back({element, confirm});
+							//~ } else {
+								//~ readGrouped rg({element, confirm});
+								//~ vector <readGrouped> v({rg});
+								//~ read_group[seqIndex] = {v};
+							//~ }
+							//~ mutex4.unlock();
+						//~ }
+					//~ }
+					//~ if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + rr){ // switch window for the query read
+						//~ identityPerChunk = 0;
+						//~ ++readFraction;
+						//~ if (not pushed){
+							//~ consecutiveWindows.push_back(false);
+						//~ }
+						//~ rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + 1;
+					//~ }
+				//~ }
+				//~ if (identity >= nbWindows){
+				    //~ for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
+					    //~ string kmer((*vecReads)[element].substr(toErase, kmer_size));
+					    //~ uint64_t kmerInt(string2int(kmer));
+					    //~ uint32_t elem(r->first);
+					    //~ mutex1.lock();
+					    //~ quasiDico->remove(kmerInt, elem, countRm);  // if a read is strongly alike another, we will not treat it but use the results already computed
+					    //~ mutex1.unlock();
+				    //~ }
+				    //~ mutex2.lock();
+				    //~ (*vecReads)[element] = "";
+				    //~ mutex2.unlock();
+				//~ }
+			//~ }
 			string toPrint;
 			bool read_id_printed = false; // Print (and sync file) only if the read is similar to something.
 			if (not read_group[seqIndex].empty()){

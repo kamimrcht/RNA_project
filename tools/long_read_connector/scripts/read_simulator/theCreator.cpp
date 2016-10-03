@@ -57,7 +57,7 @@ string randomSequence(const uint length){
 
 
 //~ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
-string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
+string mutateSequence(const string& referenceSequence, uint maxMutRate=3, vector <double> ratioMutation={0.06,0.73,0.21}){
 	string result;
 	result.reserve(5 * referenceSequence.size());
 	for(uint i(0); i < referenceSequence.size(); ++i){
@@ -97,7 +97,7 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 
 
 
-vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
+vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=8, uint sizeExons=100){
 //~ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
 	vector<string> result;
 	vector<string> exonList;
@@ -129,7 +129,7 @@ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, 
 
 
 
-void generateReads(uint numberReads, uint referencesNumber=1000, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
+void generateReads(uint numberReads, uint referencesNumber=2, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(refFileName);
 	vector<vector<string>> referenceList;
@@ -157,7 +157,7 @@ void generateReads(uint numberReads, uint referencesNumber=1000, const string& o
 int main(int argc, char ** argv){
 	srand (time(NULL));
 	auto startChrono = chrono::system_clock::now();
-	generateReads(200000);
+	generateReads(10);
 	auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 	cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
 	return 0;

@@ -56,15 +56,15 @@ gamma=10
 fingerprint_size=32
 kmer_threshold=75
 window_size=80
-core_used=0
+core_used=1
 prefix="long_read_connector_res"
 remove=1
 diskMode=0
 countMode=0
 
 small_k=9
-nb_small_k=120
-nb_windows=15
+nb_small_k=1
+nb_windows=80
 
 #######################################################################
 #################### GET OPTIONS                #######################
