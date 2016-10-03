@@ -62,7 +62,7 @@ diskMode=0
 countMode=0
 
 small_k=9
-nb_small_k=50
+nb_small_k=30
 size_windows=80
 
 #######################################################################

@@ -1,5 +1,5 @@
 #include <LRC_linker_rna.hpp>
-#include "LRC_pseudocluster_rna.cpp"
+#include "LRC_cluster_rna.cpp"
 #include "unordered_set"
 #include "mutex"
 
@@ -395,8 +395,8 @@ void LRC_linker_rna::execute(){
 	uint size_window =  getInput()->getInt(STR_WINDOW);
 	unordered_map <uint64_t, vector<int>> readRedundancy;
 	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, size_windows);
-	LRC_pseudocluster_rna pseudoClust("long_read_connector_res.tmp", getInput()->getStr(STR_OUT_FILE).c_str());
-	pseudoClust.execute();
+	LRC_cluster_rna clust("long_read_connector_res.tmp", getInput()->getStr(STR_OUT_FILE).c_str());
+	clust.execute();
 
 
 	getInfo()->add (1, &LibraryInfo::getInfo());

@@ -9,13 +9,7 @@
 #include <iostream>
 
 using namespace std;
-//~ #include <gatb/gatb_core.hpp>
-//~ #include "../../../thirdparty/IteratorKmerH5/IteratorKmerH5.hpp"
-//~ #include "../../../thirdparty/quasi_dictionary/src/quasidictionary.h"
-//~ #include "common.hpp"
 
-
-//~ class LRC_cluster_rna : public Tool
 
 class LRC_cluster_rna
 {
@@ -33,8 +27,8 @@ public:
 
     // Actual job done by the tool is here
     void split_src_lines(const string& line, char delim, vector<string>& vec);
-    void make_pseudo_clusters(ifstream& srcFile, vector<unordered_set<int>>& pseudoClusterVec, unordered_set<int>& treatedElements);
-    void write_result(ofstream& out, const vector<unordered_set<int>>& pseudoClusterVec);
+    void make_clusters(ifstream& srcFile, vector<unordered_set<int>>& clusterVec);
+    void write_result(ofstream& out, const vector<unordered_set<int>>& clusterVec);
     void execute();
 };
 
