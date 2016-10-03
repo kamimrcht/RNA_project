@@ -20,7 +20,7 @@ static const char* STR_OUT_FILE = "-out";
 static const char* STR_CORE = "-core";
 static const char* STR_SMALLK = "-small_k";
 static const char* STR_NBSMALLK = "-nb_small_k";
-static const char* STR_NBWINDOWS = "-nb_windows";
+static const char* STR_SZWINDOWS = "-size_windows";
 
 
 
@@ -42,7 +42,7 @@ LRC_linker_rna::LRC_linker_rna()  : Tool ("SRC_linker_rna"){
 
 	getParser()->push_back (new OptionOneParam (STR_SMALLK, "small k value",    false, "9"));
 	getParser()->push_back (new OptionOneParam (STR_NBSMALLK, "nb of small k mers to look for",    false, "120"));
-	getParser()->push_back (new OptionOneParam (STR_NBWINDOWS, "nb of windows",    false, "15"));
+	getParser()->push_back (new OptionOneParam (STR_SZWINDOWS, "size of windows",    false, "15"));
 	//~ nbRead=0;
 }
 
@@ -258,16 +258,8 @@ public:
 		    for(uint locali(0); locali < toErase.size(); ++locali){
 			reads_sharing_kmer_2_positions.erase(locali);
 		    }
-		    //~ int nbKmersPerChunk(nbSmallK/nbWindows);
-		    //~ vector<unordered_set<string>> vecSets(nbWindows);
-		    //~ int readFraction(0);
-		    //~ int rr(0);
-		    //~ vector<bool> consecutiveWindows;
-		    //~ uint lenSeq((uint)(*vecReads)[seqIndex].size());
 		    vector <uint> matrix(uint(lenSeq) * reads_sharing_kmer_2_positions.size(), 0);
-		    //~ uint indexIMatrix(0);
 		    uint indexJMatrix(0);
-		    //~ vector<uint> presence(size_window, 0);
 		    for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){
 			found = false;
 			int element((int)r->first);
@@ -308,27 +300,10 @@ public:
 				    }
 				}
 				if (count > nbSmallK){
-				//~ if (uint(double(count) * kmer_size / (size_window - kmer_size + 1) * 100) >= threshold){ // todo: bad threshold
 				    found = true;
 				    ++nbWindowsHit;
 				    break;
 				}
-				//~ cout << "*****" <<nbWindowsHit << " " << (lenSeq - nbWindows + 1)*0.9 << endl;
-				//~ if (nbWindowsHit > (lenSeq - nbWindows + 1)*0.9){ // if a read is strongly alike another, we will not treat it but use the results already computed
-				    //~ found = true;
-				    //~ for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
-					//~ string kmer((*vecReads)[element].substr(toErase, kmer_size));
-					//~ uint64_t kmerInt(string2int(kmer));
-					//~ uint32_t elem(r->first);
-					//~ mutex1.lock();
-					//~ quasiDico->remove(kmerInt, elem, countRm);  
-					//~ mutex1.unlock();
-				    //~ }
-				    //~ mutex2.lock();
-				    //~ (*vecReads)[element] = "";
-				    //~ mutex2.unlock();
-				//~ }
-				
 			    }
 			    if (found){
 				    bool confirm(false);
@@ -342,102 +317,29 @@ public:
 				    }
 				    mutex4.unlock();
 			    }
-				//~ vecSets[readFraction].insert(smallKmer); // for each window (readFraction), store the associated kmers
-				//~ if (vv > ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + rr){
-					//~ ++readFraction;
-					//~ rr += ((int)(*vecReads)[seqIndex].size() - smallKsize + 1) / nbWindows + 1;
-				//~ }
 			    ++indexJMatrix; // one j per read recruited
 			}
 		    }
-		    //~ for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){ // for all associated reads
-			//~ for (int vv(0); vv < (int)(*vecReads)[seqIndex].size() - smallKsize + 1; ++vv){
-			    //~ string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize));
-			//~ }
-
-
-			
-				//~ size_t lenseq = seq.getDataSize();
-				//~ int element((int)r->first);
-				//~ int identity(0);
-				//~ bool previousIdentity(false);
-				//~ int readFraction(0);
-				//~ int rr(0);
-				//~ int identityPerChunk(0);
-				//~ bool pushed(false);
-				//~ for (int smallK(0); smallK < (int)(*vecReads)[element].size() - smallKsize + 1; ++smallK){
-					//~ string kmer((*vecReads)[element].substr(smallK, smallKsize));
-					//~ if (vecSets[readFraction].count(kmer)){ // check if the kmer of the associated read is in the same window than in  the query read
-						//~ ++identityPerChunk;
-					//~ }
-
-					//~ if (identityPerChunk == nbKmersPerChunk){
-						//~ bool consecutive;
-						//~ identityPerChunk = 0;
-						//~ ++ identity;
-						//~ consecutiveWindows.push_back(true);
-						//~ pushed = true;
-						//~ if (consecutiveWindows.size() > 1){
-							//~ if (consecutiveWindows[consecutiveWindows.size() - 2]){
-								//~ consecutive = true; // two consecutive windows found
-							//~ }
-						//~ }
-						//~ if (consecutive){ // if at least two consecutive windows are found the associated read is grouped with the query read
-							//~ bool confirm(false);
-							//~ mutex4.lock();
-							//~ if (read_group.count(seqIndex)){
-								//~ read_group[seqIndex].push_back({element, confirm});
-							//~ } else {
-								//~ readGrouped rg({element, confirm});
-								//~ vector <readGrouped> v({rg});
-								//~ read_group[seqIndex] = {v};
-							//~ }
-							//~ mutex4.unlock();
-						//~ }
-					//~ }
-					//~ if (smallK > ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + rr){ // switch window for the query read
-						//~ identityPerChunk = 0;
-						//~ ++readFraction;
-						//~ if (not pushed){
-							//~ consecutiveWindows.push_back(false);
-						//~ }
-						//~ rr += ((int)(*vecReads)[element].size() - smallKsize + 1) / nbWindows + 1;
-					//~ }
-				//~ }
-				//~ if (identity >= nbWindows){
-				    //~ for (int toErase(0); toErase < (int)(*vecReads)[element].size() - kmer_size + 1; ++toErase){
-					    //~ string kmer((*vecReads)[element].substr(toErase, kmer_size));
-					    //~ uint64_t kmerInt(string2int(kmer));
-					    //~ uint32_t elem(r->first);
-					    //~ mutex1.lock();
-					    //~ quasiDico->remove(kmerInt, elem, countRm);  // if a read is strongly alike another, we will not treat it but use the results already computed
-					    //~ mutex1.unlock();
-				    //~ }
-				    //~ mutex2.lock();
-				    //~ (*vecReads)[element] = "";
-				    //~ mutex2.unlock();
-				//~ }
-			//~ }
-			string toPrint;
-			bool read_id_printed = false; // Print (and sync file) only if the read is similar to something.
-			if (not read_group[seqIndex].empty()){
-				if (not read_id_printed){
-				read_id_printed = true;
-				toPrint = to_string(seqIndex) + ":";
-				}
-				for (uint i(0); i < read_group[seqIndex].size(); ++i){
-					toPrint += to_string(read_group[seqIndex][i].index) + " ";
-				}
-				if (read_id_printed){
-				mutex3.lock();
-				toPrint += "\n";
-				fwrite(toPrint.c_str(), sizeof(char), toPrint.size(), outFile);
-				mutex3.unlock();
-				}
-			}
-			if (countRm > prevCount){
-				prevCount = countRm;
-			}
+		    string toPrint;
+		    bool read_id_printed = false; // Print (and sync file) only if the read is similar to something.
+		    if (not read_group[seqIndex].empty()){
+			    if (not read_id_printed){
+			    read_id_printed = true;
+			    toPrint = to_string(seqIndex) + ":";
+			    }
+			    for (uint i(0); i < read_group[seqIndex].size(); ++i){
+				    toPrint += to_string(read_group[seqIndex][i].index) + " ";
+			    }
+			    if (read_id_printed){
+			    mutex3.lock();
+			    toPrint += "\n";
+			    fwrite(toPrint.c_str(), sizeof(char), toPrint.size(), outFile);
+			    mutex3.unlock();
+			    }
+		    }
+		    if (countRm > prevCount){
+			    prevCount = countRm;
+		    }
 	    }
 	}
 };
@@ -472,10 +374,10 @@ void LRC_linker_rna::execute(){
 
 	//~ int small_k =  9;
 	//~ int nb_small_k = 100;
-	//~ int nb_windows = 41;
+	//~ int size_windows = 41;
 	int small_k = getInput()->getInt(STR_SMALLK);
 	int nb_small_k = getInput()->getInt(STR_NBSMALLK);
-	int nb_windows = getInput()->getInt(STR_NBWINDOWS);
+	int size_windows = getInput()->getInt(STR_SZWINDOWS);
 	// IMPORTANT NOTE:
 	// Actually, during the filling of the dictionary values, one may fall on non solid non indexed kmers
 	// that are quasi dictionary false positives (ven with a non null fingerprint. This means that one nevers knows in advance how much
@@ -492,7 +394,7 @@ void LRC_linker_rna::execute(){
 	int threshold = getInput()->getInt(STR_THRESHOLD);
 	uint size_window =  getInput()->getInt(STR_WINDOW);
 	unordered_map <uint64_t, vector<int>> readRedundancy;
-	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, nb_windows);
+	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, size_windows);
 	LRC_pseudocluster_rna pseudoClust("long_read_connector_res.tmp", getInput()->getStr(STR_OUT_FILE).c_str());
 	pseudoClust.execute();
 
@@ -510,6 +412,6 @@ void LRC_linker_rna::execute(){
 
 	getInfo()->add (2, "Small k size",  "%d",  small_k);
 	getInfo()->add (2, "Number of small k-mers",  "%d",  nb_small_k);
-	getInfo()->add (2, "Number of windows",  "%d",  nb_windows);
+	getInfo()->add (2, "Size of windows",  "%d",  size_windows);
 
 }

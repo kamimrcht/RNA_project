@@ -42,7 +42,7 @@ echo  "	-F value. Fingerprint size. Size of the key associated to each indexed v
 echo  "	-G value. gamma value. MPHF expert users parameter - Default=2"
 echo  "	-a: kmer abundance min (kmer from bank seen less than this value are not indexed). Default=2"
 echo  "	-s: Minimal percentage of shared kmer in a region for considering 2 reads in a same group. Default=75"
-echo  " -w: Region (putative exon) size. Default=80"
+#~ echo  " -w: Region (putative exon) size. Default=80"
 echo  "	-t: number of thread used. Default=0"
 }
 
@@ -55,7 +55,6 @@ abundance_min=2
 gamma=10
 fingerprint_size=32
 kmer_threshold=75
-window_size=80
 core_used=1
 prefix="long_read_connector_res"
 remove=1
@@ -63,8 +62,8 @@ diskMode=0
 countMode=0
 
 small_k=9
-nb_small_k=1
-nb_windows=80
+nb_small_k=50
+size_windows=80
 
 #######################################################################
 #################### GET OPTIONS                #######################
@@ -91,8 +90,8 @@ nb_small_k=$OPTARG
 
 
 W)
-echo "use nb_windows=$OPTARG" >&2
-nb_windows=$OPTARG
+echo "use size_windows=$OPTARG" >&2
+size_windows=$OPTARG
 ;;
 
 
@@ -161,10 +160,10 @@ echo "use kmer_threshold=$OPTARG" >&2
 kmer_threshold=$OPTARG
 ;;
 
-w)
-echo "use window_size=$OPTARG" >&2
-window_size=$OPTARG
-;;
+#~ w)
+#~ echo "use window_size=$OPTARG" >&2
+#~ window_size=$OPTARG
+#~ ;;
 
 
 t)
@@ -227,7 +226,7 @@ fi
 if [ $diskMode -eq 0 ]; then
 	cmd="${BIN_DIR}/long_read_connector"
 	# adding options
-	cmd="${cmd} -graph ${out_dsk}  -bank ${bank_set}  -out ${result_file} -kmer_threshold ${kmer_threshold} -window_size ${window_size} -fingerprint_size ${fingerprint_size} -core ${core_used} -gamma ${gamma} -small_k ${small_k} -nb_small_k ${nb_small_k} -nb_windows ${nb_windows}"
+	cmd="${cmd} -graph ${out_dsk}  -bank ${bank_set}  -out ${result_file} -kmer_threshold ${kmer_threshold} -size_windows ${size_windows} -fingerprint_size ${fingerprint_size} -core ${core_used} -gamma ${gamma} -small_k ${small_k} -nb_small_k ${nb_small_k}"
 
 #else
 	# SRC_LINKER_DISK
