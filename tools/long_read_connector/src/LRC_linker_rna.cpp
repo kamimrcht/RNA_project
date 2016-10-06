@@ -233,7 +233,7 @@ public:
 				mutex2.lock();
 				string vecElement((*vecReads)[element]);
 				mutex2.unlock();
-				if (it->second.size() > (lenSeq - kmer_size + 1)*0.05 and  vecElement.size()*0.95 <= lenSeq and  lenSeq <= vecElement.size()*1.05 ){ // todo bad threshold
+				if (it->second.size() > (lenSeq - kmer_size + 1)*0.05 and  vecElement.size()*0.95 <= lenSeq and  lenSeq <= vecElement.size()*1.05 and not vecElement.empty() ){ // todo bad threshold
 					found = true;
 					string kmer;
 
