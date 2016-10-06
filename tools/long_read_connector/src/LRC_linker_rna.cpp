@@ -335,13 +335,14 @@ public:
 		    }
 		    string toPrint;
 		    bool read_id_printed = false; // Print (and sync file) only if the read is similar to something.
-		    if (not read_group[seqIndex].empty()){
+		    auto readGroup(read_group[seqIndex]);
+		    if (not readGroup.empty()){
 			    if (not read_id_printed){
 			    read_id_printed = true;
 			    toPrint = to_string(seqIndex) + ":";
 			    }
-			    for (uint i(0); i < read_group[seqIndex].size(); ++i){
-				    toPrint += to_string(read_group[seqIndex][i].index) + " ";
+			    for (uint i(0); i < readGroup.size(); ++i){
+				    toPrint += to_string(readGroup[i].index) + " ";
 			    }
 			    if (read_id_printed){
 			    mutex3.lock();
