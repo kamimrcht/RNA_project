@@ -196,7 +196,10 @@ public:
 		//~ return;
 	    if (not valid_sequence(seq, kmer_size)){return;} // query sequence
 		uint64_t seqIndex(seq.getIndex() + 1);
-		if (not (*vecReads)[seqIndex].empty()){
+		mutex2.lock();
+		string vecElement2((*vecReads)[seqIndex]);
+		mutex2.unlock();
+		if (not vecElement2.empty()){
 		    bool exists;
 		    associated_read_ids = {}; // list of the ids of reads from the bank where a kmer occurs
 		    reads_sharing_kmer_2_positions = {};  // store the position where a k-mer is seen in a read that can be potentially recruited
@@ -218,107 +221,117 @@ public:
 				}
 				++i;
 		    }
-		    uint lenSeq((uint)(*vecReads)[seqIndex].size());
+		    uint lenSeq((uint)vecElement2.size());
 		    vector<uint> toErase;
 		    bool found(false);
 		    for ( auto it = reads_sharing_kmer_2_positions.begin(); it != reads_sharing_kmer_2_positions.end(); ++it ){
-			found = false;
-			int element((int)it->first);
-			if(it->second.size() < 10){//TODO 3 is arbitrary threshold
-			    toErase.push_back(it->first);
-			}
-			if (it->second.size() > (lenSeq - kmer_size + 1)*0.05 and  (*vecReads)[element].size()*0.95 <= lenSeq and  lenSeq <= (*vecReads)[element].size()*1.05 ){ // todo bad threshold
-			    found = true;
-			    for (int toEraseFromQD(0); toEraseFromQD < (int)(*vecReads)[element].size() - kmer_size + 1; ++toEraseFromQD){
-				    string kmer((*vecReads)[element].substr(toEraseFromQD, kmer_size));
-				    uint64_t kmerInt(string2int(kmer));
-				    uint32_t elem(it->first);
-				    mutex1.lock();
-				    quasiDico->remove(kmerInt, elem, countRm);  
-				    mutex1.unlock();
+				found = false;
+				int element((int)it->first);
+				if(it->second.size() < 10){//TODO 3 is arbitrary threshold
+					toErase.push_back(it->first);
 				}
 				mutex2.lock();
-				(*vecReads)[element] = "";
+				string vecElement((*vecReads)[element]);
 				mutex2.unlock();
-			}
-			if (found){
-				bool confirm(false);
-				mutex5.lock();
-				if (read_group.count(seqIndex)){
-				    read_group[seqIndex].push_back({element, confirm});
-				} else {
-				    readGrouped rg({element, confirm});
-				    vector <readGrouped> v({rg});
-				    read_group[seqIndex] = {v};
+				if (it->second.size() > (lenSeq - kmer_size + 1)*0.05 and  vecElement.size()*0.95 <= lenSeq and  lenSeq <= vecElement.size()*1.05 ){ // todo bad threshold
+					found = true;
+					string kmer;
+
+					for (int toEraseFromQD(0); toEraseFromQD < (int)vecElement.size() - kmer_size + 1; ++toEraseFromQD){
+						kmer=(vecElement.substr(toEraseFromQD, kmer_size));
+						uint64_t kmerInt(string2int(kmer));
+						uint32_t elem(it->first);
+						mutex1.lock();
+						quasiDico->remove(kmerInt, elem, countRm);
+						mutex1.unlock();
+					}
+					mutex2.lock();
+					(*vecReads)[element] = "";
+					mutex2.unlock();
 				}
-				mutex5.unlock();
-			}
-			
+				if (found){
+					bool confirm(false);
+					mutex5.lock();
+					if (read_group.count(seqIndex)){
+						read_group[seqIndex].push_back({element, confirm});
+					} else {
+						readGrouped rg({element, confirm});
+						vector <readGrouped> v({rg});
+						read_group[seqIndex] = {v};
+					}
+					mutex5.unlock();
+				}
 		    }
 		    for(uint locali(0); locali < toErase.size(); ++locali){
-			reads_sharing_kmer_2_positions.erase(locali);
+				reads_sharing_kmer_2_positions.erase(locali);
 		    }
 		    vector <uint> matrix(uint(lenSeq) * reads_sharing_kmer_2_positions.size(), 0);
 		    uint indexJMatrix(0);
 		    for (auto r(reads_sharing_kmer_2_positions.begin()); r != reads_sharing_kmer_2_positions.end(); ++r){
-			found = false;
-			int element((int)r->first);
-			if (not (*vecReads)[element].empty()){
-			    unordered_set <string> kmers_read_shared;
-			    for (uint v(0); v < (*vecReads)[element].size() - smallKsize + 1; ++v){
-				string kmer((*vecReads)[element].substr(v, smallKsize));
-				kmers_read_shared.insert(kmer);
-			    }
-			    for (uint vv(0); vv < lenSeq - smallKsize + 1; ++vv){
-				string smallKmer((*vecReads)[seqIndex].substr(vv, smallKsize)); // get all small k-mers from the query sequence
-				if (kmers_read_shared.count(smallKmer)){
-				    matrix[vv + lenSeq * indexJMatrix] = 1;
+				found = false;
+				int element((int)r->first);
+				mutex2.lock();
+				string vecElement((*vecReads)[element]);
+				mutex2.unlock();
+				if (not vecElement.empty()){
+					unordered_set <string> kmers_read_shared;
+					string kmer;
+
+					for (uint v(0); v < vecElement.size() - smallKsize + 1; ++v){
+						kmer=(vecElement.substr(v, smallKsize));
+						kmers_read_shared.insert(kmer);
+					}
+					string smallKmer;
+					for (uint vv(0); vv < lenSeq - smallKsize + 1; ++vv){
+						smallKmer=(vecElement2.substr(vv, smallKsize)); // get all small k-mers from the query sequence
+						if (kmers_read_shared.count(smallKmer)){
+							matrix[vv + lenSeq * indexJMatrix] = 1;
+						}
+					}
+					uint start(0);
+					uint count(0);
+					uint startKmerPosi(0);
+					uint endKmerPosi(0);
+					uint nbWindowsHit(0);
+					for (uint w(0); w < lenSeq - smallKsize + 1; ++w){
+
+					if (w < nbWindows){
+						if (matrix[w + lenSeq * indexJMatrix] == 1){
+						endKmerPosi = w;
+						++count;
+						}
+
+					} else {
+						start = w - nbWindows + 1;
+						endKmerPosi = w;
+						startKmerPosi = start;
+						if (matrix[start - 1 + lenSeq * indexJMatrix] == 1 and count > 0){
+						--count;
+						}
+						if (matrix[w  + lenSeq * indexJMatrix] == 1){
+						++count;
+						}
+					}
+					if (count > nbSmallK){
+						found = true;
+						++nbWindowsHit;
+						break;
+					}
+					}
+					if (found){
+						bool confirm(false);
+						mutex5.lock();
+						if (read_group.count(seqIndex)){
+						read_group[seqIndex].push_back({element, confirm});
+						} else {
+						readGrouped rg({element, confirm});
+						vector <readGrouped> v({rg});
+						read_group[seqIndex] = {v};
+						}
+						mutex5.unlock();
+					}
+					++indexJMatrix; // one j per read recruited
 				}
-			    }
-			    uint start(0);
-			    uint count(0);
-			    uint startKmerPosi(0);
-			    uint endKmerPosi(0);
-			    uint nbWindowsHit(0);
-			    for (uint w(0); w < lenSeq - smallKsize + 1; ++w){
-				
-				if (w < nbWindows){
-				    if (matrix[w + lenSeq * indexJMatrix] == 1){
-					endKmerPosi = w;
-					++count;
-				    }
-			       
-				} else {
-				    start = w - nbWindows + 1;
-				    endKmerPosi = w;
-				    startKmerPosi = start;
-				    if (matrix[start - 1 + lenSeq * indexJMatrix] == 1 and count > 0){
-					--count;
-				    }
-				    if (matrix[w  + lenSeq * indexJMatrix] == 1){
-					++count;
-				    }
-				}
-				if (count > nbSmallK){
-				    found = true;
-				    ++nbWindowsHit;
-				    break;
-				}
-			    }
-			    if (found){
-				    bool confirm(false);
-				    mutex4.lock();
-				    if (read_group.count(seqIndex)){
-					read_group[seqIndex].push_back({element, confirm});
-				    } else {
-					readGrouped rg({element, confirm});
-					vector <readGrouped> v({rg});
-					read_group[seqIndex] = {v};
-				    }
-				    mutex4.unlock();
-			    }
-			    ++indexJMatrix; // one j per read recruited
-			}
 		    }
 		    string toPrint;
 		    bool read_id_printed = false; // Print (and sync file) only if the read is similar to something.
