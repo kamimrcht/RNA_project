@@ -394,9 +394,7 @@ void LRC_linker_rna::execute(){
 	int threshold = getInput()->getInt(STR_THRESHOLD);
 	uint size_window =  getInput()->getInt(STR_WINDOW);
 	unordered_map <uint64_t, vector<int>> readRedundancy;
-	cout << "started" << endl;
 	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, size_windows);
-	cout << "started 2" << endl;
 	LRC_cluster_rna clust("long_read_connector_res.tmp", getInput()->getStr(STR_OUT_FILE).c_str());
 	clust.execute();
 
