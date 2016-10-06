@@ -1,5 +1,5 @@
 #include <LRC_linker_rna.hpp>
-#include "LRC_cluster_rna.cpp"
+#include "LRC_cluster_rna.hpp"
 #include "unordered_set"
 #include "mutex"
 
@@ -227,7 +227,7 @@ public:
 			if(it->second.size() < 10){//TODO 3 is arbitrary threshold
 			    toErase.push_back(it->first);
 			}
-			if (it->second.size() > (lenSeq - kmer_size + 1)*0.1 and  (*vecReads)[element].size()*0.95 <= lenSeq and  lenSeq <= (*vecReads)[element].size()*1.05 ){ // todo bad threshold
+			if (it->second.size() > (lenSeq - kmer_size + 1)*0.05 and  (*vecReads)[element].size()*0.95 <= lenSeq and  lenSeq <= (*vecReads)[element].size()*1.05 ){ // todo bad threshold
 			    found = true;
 			    for (int toEraseFromQD(0); toEraseFromQD < (int)(*vecReads)[element].size() - kmer_size + 1; ++toEraseFromQD){
 				    string kmer((*vecReads)[element].substr(toEraseFromQD, kmer_size));
@@ -394,7 +394,9 @@ void LRC_linker_rna::execute(){
 	int threshold = getInput()->getInt(STR_THRESHOLD);
 	uint size_window =  getInput()->getInt(STR_WINDOW);
 	unordered_map <uint64_t, vector<int>> readRedundancy;
+	cout << "started" << endl;
 	parse_query_sequences(threshold, size_window, nbCores, bankName, &readsVector, &readRedundancy, small_k, nb_small_k, size_windows);
+	cout << "started 2" << endl;
 	LRC_cluster_rna clust("long_read_connector_res.tmp", getInput()->getStr(STR_OUT_FILE).c_str());
 	clust.execute();
 
