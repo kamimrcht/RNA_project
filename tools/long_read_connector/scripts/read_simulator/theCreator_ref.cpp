@@ -98,7 +98,7 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 
 
 //~ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
-vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=11, uint exonNumber=10, uint sizeExons=100){
+vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=14, uint exonNumber=8, uint sizeExons=100){
 	string sequence;
 	vector<vector<string>> result;
 	uint nbRef(0);
@@ -150,7 +150,7 @@ vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile
 
 unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numberReads){
 	uint nbMidExpressed(referencesNumber * 0.6); // code 1
-	uint nbHighlyExpressed(referencesNumber * 0.1); // code 0
+	uint nbHighlyExpressed(referencesNumber * 0.1+1); // code 0
 
 	
 	
@@ -182,7 +182,7 @@ unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numbe
 
 
 
-void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=700, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
+void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=25, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(outRefFileName);
 	vector<vector<string>> referenceList(generateAlternativeTranscriptReferences(inRef, referencesNumber));

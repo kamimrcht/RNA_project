@@ -58,32 +58,12 @@ void LRC_cluster_rna::make_clusters(ifstream& srcFile, vector<unordered_set<int>
 	    test.insert(element);
 	    for (int i(0); i < secondSplit.size(); ++i){
 		if (not secondSplit[i].empty()){
-		    //~ group.push_back(stoi(secondSplit[i])); // create a new group with elements from one line of the file
 		    test.insert(stoi(secondSplit[i]));
 		}
 	    }
 	    clusterVec.push_back(test);
 	}
     }
-    //~ for (uint i(0); i < clusterVec.size() - 1; ++i){
-	//~ vector<uint> toMerge;
-	//~ bool inClust(false);
-	//~ for (uint j(1); j < clusterVec.size(); ++j){
-	    //~ for (auto elt(clusterVec[i].begin()); elt !=clusterVec[i].end(); ++elt){
-		//~ if (clusterVec[j].count(*elt)){
-		    //~ inClust = true;
-		    //~ toMerge.push_back(j);
-		//~ }
-	    //~ }
-	    //~ if (inClust){
-		//~ for (uint jj(0); jj < toMerge.size(); ++jj){
-		    //~ clusterVec[i].insert(clusterVec[toMerge[jj]].begin(), clusterVec[toMerge[jj]].end());
-		    //~ clusterVec[toMerge[jj]].clear();
-		//~ }
-	    //~ }
-	//~ }	
-    //~ }
-    //~ uint i(0);
     bool inClust(true);
     uint c(0), cc(0);
     while (inClust){
@@ -92,101 +72,38 @@ void LRC_cluster_rna::make_clusters(ifstream& srcFile, vector<unordered_set<int>
 	for (uint i(0); i < clusterVec.size() ; ++i){
 	    
 	    if (not clusterVec[i].empty()){
-		//~ cout << i << endl;
-		//~ cout << "clust" << endl;
-		//~ for (auto t(clusterVec[i].begin()); t !=clusterVec[i].end() ;++t){
-		    //~ cout <<*t << " ";
-		//~ }
-		//~ cout << endl;
 		for (uint j(i+1); j < clusterVec.size(); ++j){
 		    c = 0;
 		    if (not clusterVec[j].empty()){
-			//~ if(clusterVec[j] == clusterVec[i]){
-			    //~ cout << i << " " << j << endl;
-			//~ }
-			    //~ clusterVec[i].insert(clusterVec[j].begin(), clusterVec[j].end());
-			    //~ clusterVec[j].clear();
-			    //~ ++c;
-			//~ } else {
-			    //~ cout << "clust j" << endl;
-			    //~ for (auto t(clusterVec[j].begin()); t !=clusterVec[j].end() ;++t){
-				//~ cout <<*t << " ";
-			    //~ }
-			    //~ cout << endl;
 			    for (auto elt(clusterVec[i].begin()); elt != clusterVec[i].end(); ++elt){
 				if (clusterVec[j].count(*elt)){
 				    clusterVec[i].insert(clusterVec[j].begin(), clusterVec[j].end());
 				    clusterVec[j].clear();
-				    //~ cout << "oui" << endl;
 				    inClust = true;
 				    goto test;
 				} else {
 				    ++c;
 				}
 			    }
-			    //~ cout << "c" << c << " " << clusterVec[i].size() << endl;
 			    if (c == clusterVec[i].size()){
-				//~ cout << "yes" << endl;
 				++ cc;
 			    }
-			//~ }
 		    } else {
 			++cc;
 		    }
 		}
-		//~ cout << "cc" << c << " " << clusterVec.size() - 1 << endl;
 		if (cc == clusterVec.size() - 1){
 		    inClust = false;
 		}
 		test:
 		{
 		    if (inClust){
-			//~ cout << "b" << endl;
 			break;
 		    }	
 		}
 	    }
 	}
-	//~ cout << "*****" << endl;
-	 //~ for (uint i(0); i < clusterVec.size() ; ++i){
-	     //~ cout << "clust " ;
-		//~ for (auto t(clusterVec[i].begin()); t !=clusterVec[i].end() ;++t){
-		    //~ cout <<*t << " ";
-		//~ }
-		//~ cout << endl;
-	    //~ }
-	    	//~ cout << "*****" << endl;
     }
-
-    
-    //~ while (i < clusterVec.size() - 1){
-	//~ bool inClust(false);
-	//~ vector<uint> toMerge;
-	//~ for (auto t(clusterVec[i].begin()); t !=clusterVec[i].end() ;++t){
-	    //~ cout << *t << " ";
-	//~ }
-	//~ cout << endl;
-	//~ for (uint j(1); j < clusterVec.size(); ++j){
-	    //~ for (auto elt(clusterVec[i].begin()); elt !=clusterVec[i].end(); ++elt){
-		//~ if (clusterVec[j].count(*elt)){
-		    //~ cout << true << endl;
-		    //~ inClust = true;
-		    //~ break;
-		//~ }
-	    //~ }
-	    //~ if (inClust){
-		//~ clusterVec[i].insert(clusterVec[j].begin(), clusterVec[j].end());
-		//~ for (auto t(clusterVec[i].begin()); t !=clusterVec[i].end() ;++t){
-		    //~ cout << "**" <<*t << " ";
-		//~ }
-		//~ cout << endl;
-		//~ clusterVec[j].clear();
-		//~ inClust = false;
-	    //~ }
-	//~ }
-	//~ ++i;
-    //~ }
-
 }
 
 
