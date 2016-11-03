@@ -11,10 +11,11 @@
 
 using namespace std;
 
-uint THRESHOLD1(2);
+uint THRESHOLD1(1);
 uint THRESHOLD2(3);
 uint THRESHOLD3(1);
 uint D(2);
+uint SIZE_INSERTION(2);
 
 void fillSignatures(vector<string>& vectSequences, uint k, unordered_map<string, vector<int>>& kmerToSignature){
 	string kmer;
@@ -75,9 +76,6 @@ void dispatchErrors(vector<string>& vectSequences, uint k, unordered_map<string,
 						kmerToReadPosi.insert({kmer, {rp}});
 					}
 				} else { // kmer with error
-					//~ if (kmer == "TAGCACGAA"){
-						//~ cout << "YU " << r << " " <<p<< endl;
-					//~ }
 					readToErrorPosition[r].push_back(p);
 				}
 			}
@@ -85,14 +83,17 @@ void dispatchErrors(vector<string>& vectSequences, uint k, unordered_map<string,
 	}
 }
 
-vector<string> generateAltKmer(string& kmer){
+vector<string> generateAltKmer(string& kmer ){
 	vector<string> ntInt({"A", "C", "G", "T"});
 	vector<string> result;
 	char ntc(kmer.back());
 	string nt; nt.push_back(ntc);
-	for (string i : ntInt){
-		if (i != nt){
-			result.push_back(kmer.substr(0, kmer.size()-1) + i);
+	for (uint t(0); t < kmer.size(); ++t){
+		for (string i : ntInt){
+			if (i != nt){
+				result.push_back(kmer.substr(0, t) + i + kmer.substr(t + 1));
+				//~ result.push_back(kmer.substr(0, kmer.size()-1) + i);
+			}
 		}
 	}
 	return result;
@@ -132,7 +133,6 @@ string makeConsensus(vector<string>& seqVec){
 
 
 string returnSeqBetween2Kmers(uint k, uint read, uint start, string& nextKmer, vector<string>& vectSequences){
-//~ string returnSeqBetween2Kmers(uint k, uint read, uint start, string& nextKmer, vector<string>& vectSequences){
 	string result(vectSequences[read].substr(start, k));
 	uint incr(k + 1);
 	uint size(vectSequences[read].size() - start);
@@ -147,6 +147,100 @@ string returnSeqBetween2Kmers(uint k, uint read, uint start, string& nextKmer, v
 	}
 }
 
+
+
+void followingKmers(vector<string>& vectSequences, uint k, unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi, unordered_set<string>& branchingKmersLeft, unordered_set<string>& branchingKmersRight){
+	string kmer, prev, next;
+	unordered_map<string, vector<string>> kmerLeft, kmerRight;
+	for (uint r(0); r < vectSequences.size(); ++r){
+		for (uint p(0); p < vectSequences[r].size() - k + 1; ++p){
+			kmer = vectSequences[r].substr(p, k);
+			if (kmerToReadPosi.count(kmer)){ // only on errorless kmers
+				if (p == 0){
+					prev = "";
+					next = vectSequences[r].substr(p + 1, k);
+				} else if (p == vectSequences[r].size() - k){
+					prev = vectSequences[r].substr(p - 1, k);
+					next = "";	
+				} else {
+					prev = vectSequences[r].substr(p - 1, k);
+					next = vectSequences[r].substr(p + 1, k);
+				}
+				auto gotn(kmerToReadPosi.find(next));
+				auto gotp(kmerToReadPosi.find(prev));
+				auto got(kmerLeft.find(kmer));
+				auto got2(kmerRight.find(kmer));
+				if (gotn != kmerToReadPosi.end()){
+					if (got2 != kmerRight.end()){
+						got2->second.push_back(next);
+					} else {
+						vector<string> v = {next};
+						kmerRight[kmer] = v;
+					}
+				}
+				if (gotp != kmerToReadPosi.end()){
+					if (got != kmerLeft.end()){
+						got->second.push_back(prev);
+					} else {
+						vector<string> v = {prev};
+						kmerLeft[kmer] = v;
+					}
+				}
+			}
+		}
+	}
+	uint s;
+	for (auto p(kmerLeft.begin()); p != kmerLeft.end(); ++p){
+		s = 0;
+		vector<string> newVec;
+		sort(p->second.begin(), p->second.end());
+		bool same(true);
+		while (s < p->second.size() - 1){
+			if (p->second[s] != p->second[s + 1]){
+				newVec.push_back(p->second[s]);
+				same = false;
+				
+			} else {
+				if (same == false){
+					newVec.push_back(p->second[s]);
+				}
+				same = true;
+			}
+			++s;
+		}
+		if (not same and s == p->second.size() - 1){ // last element
+			newVec.push_back(p->second[s]);
+		}
+		if (newVec.size() > 1){
+			branchingKmersLeft.insert(p->first);
+		}
+	}
+	
+	for (auto n(kmerRight.begin()); n != kmerRight.end(); ++n){
+		s = 0;
+		vector<string> newVec;
+		sort(n->second.begin(), n->second.end());
+		bool same(true);
+		while (s < n->second.size() - 1){
+			if (n->second[s] != n->second[s + 1]){
+				newVec.push_back(n->second[s]);
+				same = false;
+			} else {
+				if (same == false){
+					newVec.push_back(n->second[s]);
+				}
+				same = true;
+			}
+			++s;
+		}
+		if(not same and s == n->second.size() - 1){ // last element
+			newVec.push_back(n->second[s]);
+		}
+		if (newVec.size() > 1){
+			branchingKmersRight.insert(n->first);
+		}
+	}
+}
 
 // gets the most frequent sequence length
 uint sizeToKeep(vector<uint>& vecSizes){ 
@@ -174,388 +268,280 @@ uint sizeToKeep(vector<uint>& vecSizes){
 }
 
 
-
-
-
-
-void followingKmers(vector<string>& vectSequences, uint k, unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi, unordered_map<string, vector<string>>& kmerToPrevious, unordered_map<string, vector<string>>& kmerToNext){
-	string kmer, prev, next;
-	for (uint r(0); r < vectSequences.size(); ++r){
-		for (uint p(0); p < vectSequences[r].size() - k + 1; ++p){
-			kmer = vectSequences[r].substr(p, k);
-			if (kmerToReadPosi.count(kmer)){
-				if (p == 0){
-					prev = "";
-					next = vectSequences[r].substr(p + 1, k);
-				} else if (p == vectSequences[r].size() - k){
-					prev = vectSequences[r].substr(p - 1, k);
-					next = "";	
-				} else {
-					prev = vectSequences[r].substr(p - 1, k);
-					next = vectSequences[r].substr(p + 1, k);
-				}
-				auto gotn(kmerToReadPosi.find(next));
-				auto gotp(kmerToReadPosi.find(prev));
-				auto got(kmerToPrevious.find(kmer));
-				auto got2(kmerToNext.find(kmer));
-				if (gotn != kmerToReadPosi.end()){
-					if (got2 != kmerToNext.end()){
-						got2->second.push_back(next);
-					} else {
-						vector<string> v={next};
-						kmerToNext[kmer] = v;
-					}
-				}
-				if (gotp != kmerToReadPosi.end()){
-					if (got != kmerToPrevious.end()){
-						//~ cout << "here" << endl;
-						got->second.push_back(prev);
-					} else {
-						vector<string> v={prev};
-						kmerToPrevious[kmer] = v;
-					}
-				}
-			}
-		}
+vector<int> sumOfProfiles(vector<int>& p1, vector<int>& p2){
+	vector<int> result;
+	for (uint i(0); i < p1.size();  ++i){
+		result.push_back(p1[i] + p2[i]);
 	}
+	return result;
 }
 
 
-
-uint nbReadsSupporting(string& kmer2, unordered_map<string, vector<string>>::const_iterator kmer){
-	uint count(0), others(0);
-	//~ cout << "func" << endl;
-	for (string s : kmer->second){
-		//~ cout << s << " " << kmer2 << endl;
-		if (s == kmer2){
-			//~ cout << "ok" << endl;
-			++count;
-		} else {
-			++others;
+unordered_set<int> getZeros(vector<int>& sum){
+	unordered_set<int> result;
+	for (uint i(0); i < sum.size(); ++i){
+		if (sum[i] == 0){
+			result.insert(i);
+			//~ cout << "zero at position " << i << endl;
 		}
 	}
-	if (others > THRESHOLD3){
-		//~ cout << count << endl;
-		return count;
-	} else { // means that there is only one kmer preceeding or following = no junction
-		return 0;
-	}
+	return result;
 }
 
 
-
-void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi,  unordered_map<string, vector<int>>& kmerToSignature, unordered_map<string, vector<string>>& kmerToPrevious, unordered_map<string, vector<string>>& kmerToNext){
-	string kmer, kmer2, lastKmer("");
-	
-	for (uint r(0); r < vectSequences.size(); ++r){
-		uint posi(0), posi2(1), previousDetectedPosi = 0;
-		vector <uint> signatures;
-		signatures.push_back(0); // signature of the first kmer
-		while (posi < vectSequences[r].size() - k and posi2 < vectSequences[r].size() - k + 1){
-			kmer = vectSequences[r].substr(posi, k);
-			lastKmer = kmer;
-			auto got(kmerToReadPosi.find(kmer));
-			if (got != kmerToReadPosi.end()){
-				kmer2 = vectSequences[r].substr(posi + 1, k);
-				auto got2(kmerToReadPosi.find(kmer2));
-				if (got2 != kmerToReadPosi.end()){ // both kmers errorless - compare signatures
-					lastKmer = kmer2;
-					vector<int> sign1 = kmerToSignature[kmer];
-					vector<int> sign2 = kmerToSignature[kmer2];
-					vector<int> subs;
-					transform(sign1.begin(), sign1.end(), sign2.begin(), std::back_inserter(subs), [](int a, int b) { return abs(a-b); });
-					uint sum(0);
-					for (uint n : subs){
-						sum+=n;
-					}
-					if (sum < THRESHOLD2){
-						signatures.push_back(signatures.back());
-					} else {
-						signatures.push_back(signatures.back() + 1); // change the signature
-						if (posi != vectSequences.size() - k and posi != previousDetectedPosi){
-							unordered_map<string, vector<string>>::const_iterator gotn (kmerToNext.find(kmer));
-							bool lookForPrev(false);
-							if (gotn != kmerToNext.end()){
-								uint nbReadsS(nbReadsSupporting(kmer2, gotn));
-								if (nbReadsS > 0){ // there are several types of kmers following : junction
-									cout << "junction at position " << posi + k - 1<< endl;
-									previousDetectedPosi = posi + k - 1;
-								} else if (not posi == 0){
-									lookForPrev = true;
-								}
-							} else  if (not posi < k){
-								lookForPrev = true;
-							}
-							if (lookForPrev){
-								unordered_map<string, vector<string>>::const_iterator gotp (kmerToPrevious.find(kmer2));
-								if (gotp != kmerToPrevious.end()){
-									string prevk(kmer);
-									//~ string prevk(vectSequences[r].substr(posi2, k));
-									uint nbReadsS(nbReadsSupporting(prevk, gotp));
-									if (nbReadsS > 0){ // there are several types of kmers following : junction
-										cout << "junction at position *" << posi << endl;
-									}
-								}
-								lookForPrev = false;
-							}
-						}
-					}
-				} else { // second kmer with error : we propagate the signature
-					signatures.push_back(signatures.back());
-				}
-			} else { // first kmer has an error
-				auto got2(kmerToReadPosi.find(kmer2));
-				if (got2 != kmerToReadPosi.end()){ // Second kmer has no error
-				// compare to the last errorless kmer's sign if it exists.
-					if (not lastKmer.empty()){
-						cout << posi << " "  << kmer << " " << kmer2 << " " << lastKmer << endl;
-						vector<int> sign1 = kmerToSignature[lastKmer];
-						vector<int> sign2 = kmerToSignature[kmer2];
-						vector<int> subs;
-						transform(sign1.begin(), sign1.end(), sign2.begin(), std::back_inserter(subs), [](int a, int b) { return abs(a-b); });
-						uint sum(0);
-						for (uint n : subs){
-							sum+=n;
-						}
-						if (sum < THRESHOLD2){
-							signatures.push_back(signatures.back());
-						} else {
-							signatures.push_back(signatures.back() + 1); // change the signature
-						}
-					} else {
-						signatures.push_back(signatures.back());
-					}
-				} else { // both kmers have errors
-					signatures.push_back(signatures.back());
-				}
-			}
-			++posi; ++posi2;
-		}
-		cout << "read " << r << endl;
-		for (uint s : signatures){
-			cout << s ;
-		}
-		cout << endl;
-	}
-	
-}
-
-
-void correctErrors(vector<string>& vectSequences, unordered_map<uint, vector<uint>>& readToErrorPosition, uint k, unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi,  uint threshold=D){
-	string kmer, kmer2, prevKmer, nextTrueKmer, consensus;
-	vector<string> altKmers(3);
-	uint sizeSubSeq, nextTruePosi;
-	bool okCorrect;
-
-	uint pos(0);
-	for (auto r(readToErrorPosition.begin()); r != readToErrorPosition.end(); ++r){
-		bool corrected(false);
-		int offset(0);
-		for (uint posi1 : r->second){
-			//~ cout << posi1 << endl;
-			kmer = vectSequences[r->first].substr(posi1 + offset, k);
-			//~ cout << kmer << endl;
-			//~ if (kmer == "TAGCACGAA"){
-				//~ cout << "YU2" << endl;
+unordered_set<int> zerosOfInterval(vector<string>& vectSequences, uint read, vector<uint>& positionsVec, uint k, unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi,  unordered_map<string, vector<int>>& kmerToSignature){
+	//~ uint posi(position1 + 1), nbKmers(0);
+	uint posi(1), nbKmers(0);
+	unordered_set<int> result;
+	string kmer;
+	vector<int> profile, sum;
+	//~ for (uint i(0); i < positionsVec.size(); ++i){
+		//~ cout << "gg "<<i << endl;
+	//~ }
+	//~ cout << positionsVec.size() << endl;
+	//~ cout << "summed " << endl;
+	kmer = vectSequences[read].substr(positionsVec[0], k);
+	sum =  kmerToSignature[kmer];
+	while (posi < positionsVec.size()){ //TODO : maybe less than k -1 ?
+		kmer = vectSequences[read].substr(positionsVec[posi], k);
+		if (kmerToReadPosi.count(kmer)){
+			profile = kmerToSignature[kmer];
+			//~ cout << "SUM" << endl; 
+			//~ for (uint i : sum){
+				//~ cout << i;
 			//~ }
-			auto gotPrev(kmerToReadPosi.end());
-			if (posi1 != 0){
-				prevKmer = vectSequences[r->first].substr(posi1 + offset - 1, k);
-				//~ cout << "prev kmer " << prevKmer << endl;
-				gotPrev = kmerToReadPosi.find(prevKmer);
-			}
-			if (gotPrev != kmerToReadPosi.end()){ // correct only if the precedent kmer is ok
-				//~ cout << "prec ok" << endl;
-				okCorrect = false;
-				for (uint posi2(posi1 + offset + 1); posi2 < posi1 + offset + (k -1) + threshold + 1, posi2 < vectSequences[r->first].size() - k + 1; ++posi2){
-					kmer2 = vectSequences[r->first].substr(posi2, k);
-					//~ cout << "k2" << kmer2 << endl;
-					auto got = kmerToReadPosi.find(kmer2);
-					if (got != kmerToReadPosi.end()){ // this kmer is not erroneous
-						sizeSubSeq = posi2 - (posi1 + offset) + k - 1;
-						nextTrueKmer = kmer2;
-						//~ cout << "next here " << nextTrueKmer << endl;
-						nextTruePosi = posi2 + k - 1;
-						okCorrect = true;
+			
+			//~ cout << endl;
+			sum = sumOfProfiles(profile, sum);
+			//~ cout << "SUM" << endl; 
+			//~ for (uint i : sum){
+				//~ cout << i;
+			//~ }
+			//~ cout << endl;
+			++nbKmers;
+		}
+		++posi;
+	}
+	if (sum.size() > 2){ // TODO: bad threshold
+		result = getZeros(sum);
+	}
+	
+	return result;
+}
+
+vector<uint> positionsRight(uint start, uint k){
+	vector<uint> result;
+	for (uint i(start); i < start + k - 1; ++i){
+		result.push_back(i);
+	}
+	return result;
+}
+
+vector<uint> positionsLeft(uint start, uint k){
+	vector<uint> result;
+	for (uint i(start); i > start - k + 1; --i){
+		result.push_back(i);
+	}
+	return result;
+}
+
+
+
+
+void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi,  unordered_map<string, vector<int>>& kmerToSignature, unordered_set<string>& kmerLeft, unordered_set<string>& kmerRight){
+	uint posi, posiPrec, posiNext, posiPrev, lastJunction, lastSignature;
+	string kmer1, kmer2, currentKmer, lastTrueKmer("");
+	bool found, foundk2, confirmed, confirmed2;
+	//~ vector<int> profile1, profile2;
+	unordered_set<int> zerosInPrec, zerosInNext;
+	for (uint r(0); r < vectSequences.size(); ++r){
+		cout << r << endl;
+		posi = k - 1; lastJunction = 0;  lastSignature = 0; confirmed = false;
+		vector <uint> signatures(vectSequences[r].size(), 0);
+		while (posi < vectSequences[r].size() - k - 1){
+			vector<int> sum, sum2;
+			found = false;
+			//// chunk 1: try and find a first branching k-mer k1 ////
+			kmer1 = vectSequences[r].substr(posi, k);
+			auto gotNE(kmerToReadPosi.find(kmer1));
+			if (gotNE != kmerToReadPosi.end()){ // errorless kmer1
+				lastTrueKmer = kmer1;
+			} else { //kmer1 with error : we try to mutate it to see if we have registered  an branching kmer that is nearly similar
+				vector<string> altk1V = generateAltKmer(kmer1);
+				for (string altkmer1 : altk1V){
+					if (kmerRight.count(altkmer1)){ // we found a nearly similar branching kmers that opens a bubble
+						kmer1 = altkmer1;
 						break;
+					} else if (kmerLeft.count(altkmer1)) { // we found a nearly similar branching kmers that closes a bubble
+						kmer1 = altkmer1;
+						break;
+					} else {
+						kmer1 = ""; // we found nothing we will just continue
 					}
 				}
-				//~ if (not okCorrect){ // we did not find an errorless kmer in the neighborhood
-					//~ vector<string> ntInt({"A", "C", "G", "T"});
-					//~ for (string n : ntInt){
-						//~ nextTrueKmer = kmer.substr(1) + n;
-						//~ cout << "next there " << nextTrueKmer << endl;
-						//~ auto gotn = kmerToReadPosi.find(nextTrueKmer);
-						//~ if (gotn != kmerToReadPosi.end()){ // greedy
-							//~ cout << "got" << endl;
-							//~ okCorrect = true;
-							//~ break;
+
+				//~ if (not lastTrueKmer.empty()){
+					//~ uint newPosi(posi + 1);
+					//~ string kmer1p = vectSequences[r].substr(newPosi, k);
+					//~ auto gotNEk1(kmerToReadPosi.find(kmer1p));
+					//~ bool foundk1 = false;
+					//~ if (gotNEk1 != kmerToReadPosi.end()){
+						//~ foundk1	= true;
+					//~ }
+					//~ if (not foundk1){ // try to find a close errorless kmer k1
+						
+						//~ while (newPosi < posi + 1 + k + SIZE_INSERTION){
+							//~ ++newPosi;
+							//~ kmer1p = vectSequences[r].substr(newPosi, k);
+							//~ gotNEk1 = kmerToReadPosi.find(kmer1p);
+							//~ if ( gotNEk1 != kmerToReadPosi.end() ){
+								//~ foundk1 = true;
+								//~ break;
+							//~ }
 						//~ }
+					//~ }
+					//~ if (foundk1){ // a valid next kmer has been found /!\ sometimes the sequencing error re-creates a kmer present elsewhere and we are misled
+						//~ cout << kmer1p << " " << kmer1 << endl;
+						//~ kmer1 = kmer1p;
+						//~ posi = newPosi;
+						//~ lastTrueKmer = kmer1p;
+					//~ } else {
+						//~ kmer1 = "";
 					//~ }
 				//~ }
 			}
-			if (okCorrect){
-				//~ cout << "next " << nextTrueKmer << endl;
-				string consensus("");
-				altKmers = generateAltKmer(kmer);
-				for (string alt : altKmers){
-					vector<string> recruited;
-					vector<uint> vecSizes;
-					auto got = kmerToReadPosi.find(alt);
-					auto got2 = kmerToReadPosi.find(nextTrueKmer);
-					if(got != kmerToReadPosi.end() and got2 != kmerToReadPosi.end() ){
-						for(auto it = got->second.begin(); it != got->second.end(); ++it ){
-							uint read = it->first;
-							uint position1 = it->second;
-							//todo: instead of taking the next true kmer, mutate the last false kmer 
-							string recruitedSeq(returnSeqBetween2Kmers(k, read, position1, nextTrueKmer, vectSequences)); // get the sequence between the two flanking right kmers in reads that contain them
-							if (not recruitedSeq.empty()){
-								recruited.push_back(recruitedSeq);
-								vecSizes.push_back(recruitedSeq.size());
+			//// chunk 2: if a branching k-mer k1 is found, try to find a know neighbour k2 ////
+			if (not kmer1.empty()){ // else we were unable to find a kmer1 without error, we continue
+				auto got1(kmerRight.find(kmer1));
+				//// beginning of alternative exons (opening a bubble) ////
+				if (got1 != kmerRight.end()){
+					// try and get an errorless kmer2
+					posiNext = posi + 1;
+					kmer2 = vectSequences[r].substr(posiNext, k);
+					auto gotNE2(kmerToReadPosi.find(kmer2));
+					bool foundk2 = false;
+					if (gotNE2 != kmerToReadPosi.end()){
+						foundk2	= true;
+						cout << "k2 opening ok" << endl;
+					}
+					if (not foundk2){
+						while (posiNext < posi + 1 + 2 * k + SIZE_INSERTION){
+							++posiNext;
+							kmer2 = vectSequences[r].substr(posiNext, k);
+							auto gotNE2 = kmerToReadPosi.find(kmer2);
+							if ( gotNE2 != kmerToReadPosi.end() ){
+								foundk2 = true;
+								cout << "new k2 opening ok" << endl;
+								break;
 							}
-						}
-						if (recruited.size() > 1){
-							
-							uint lenToKeep(sizeToKeep(vecSizes));
-							if (lenToKeep != 0){
-								vector<string> recruited2;
-								for (string s : recruited){
-									if (s.size() == lenToKeep){
-										recruited2.push_back(s);
-									}
-								}
-								consensus = makeConsensus(recruited2);
-								if (consensus.size() > 0){
-									corrected = true;
-									okCorrect = false;
-									//~ cout << "corrected" << endl;
-								}
-							}
-						} else if (not recruited.empty()) { // discutable
-							consensus = recruited.back();
-							corrected = true;
-							okCorrect = false;
-							//~ cout << "corrected" << endl;
-						}
-						if (corrected){ // greedy
-							vectSequences[r->first] = vectSequences[r->first].substr(0, posi1 + offset) + consensus + vectSequences[r->first].substr(nextTruePosi); // pas ok, les prochains kmers à corriger vont changer de position...
-							offset += posi1 + offset + consensus.size() - nextTruePosi;
-							//~ cout << "offset " << offset <<  endl;
-							corrected = false;
-							okCorrect = false;
-							break;
 						}
 					}
+					if (foundk2){ // a valid next kmer has been found /!\ sometimes the sequencing error re-creates a kmer present elsewhere and we are misled
+						lastTrueKmer = kmer2;
+						vector<uint> vpositionsR;
+						if (posiNext < posi + k){
+							vpositionsR = positionsRight(posi + 1 , k); // k2 not too far from k1 (still a junction kmer) // filled with k-1 positions
+						} else {
+							//~ cout << "R error " << posiNext << " " << vectSequences[r].substr(posiNext, k) << " " << vectSequences[r].substr(posiNext + k -1 - 1, k) << endl;
+							vpositionsR = positionsRight(posiNext, k); // in case there are errors and k2 away from k1, not a junction kmer /!\ WARNING: not sure to detect the junction in this case, because we compare the signatures of 2 exons that might be used in the same quantity in the data set 
+						}
+						vector<uint> vpositionsL = positionsLeft(posi, k); // filled with k-1 positions
+						unordered_set<int> zerosOfIntervalR,  zerosOfIntervalL;
+						if (not vpositionsR.empty() and not vpositionsL.empty()){
+							//~ cout << "oui" << endl;
+							zerosOfIntervalR = zerosOfInterval(vectSequences, r, vpositionsR, k, kmerToReadPosi, kmerToSignature);
+							zerosOfIntervalL =  zerosOfInterval(vectSequences, r, vpositionsL, k, kmerToReadPosi, kmerToSignature);
+							if (zerosOfIntervalL != zerosOfIntervalR){
+								cout << "junction !! at position "  << posi + k - 1 << " (after kmer "<< kmer1  <<")" <<endl;
+							}
+						}
+						cout << kmer1 << " " << kmer2 << endl;
+					} // else we can't do nothing, there are too many errors after kmer1
+					else { cout << "no k2 opening" << endl;}
+				} else {
+					auto got1 = kmerLeft.find(kmer1);
+					if (got1 != kmerLeft.end()){
+						//// end of alternative exons (closing a bubble) ////
+						posiPrev = posi - 1;
+						kmer2 = vectSequences[r].substr(posiPrev, k);
+						auto gotNE2(kmerToReadPosi.find(kmer2));
+						bool foundk2 = false;
+						if (gotNE2 != kmerToReadPosi.end()){
+							foundk2	= true;
+							cout << "k2 closing ok" << endl;
+						}
+						if (not foundk2){
+							while (posiPrev > posi - 1 - k - SIZE_INSERTION){
+								--posiPrev;
+								kmer2 = vectSequences[r].substr(posiPrev, k);
+								auto gotNE2 = kmerToReadPosi.find(kmer2);
+								if ( gotNE2 != kmerToReadPosi.end() ){
+									foundk2 = true;
+									cout << "new k2 closing ok" << endl;
+									break;
+								}
+							}
+						}
+						if (foundk2){ // a valid next kmer has been found /!\ sometimes the sequencing error re-creates a kmer present elsewhere and we are misled
+							cout << kmer2 << " " << kmer1 << endl;
+							lastTrueKmer = kmer2;
+						} // else we can't do nothing, there are too many errors after kmer1
+						else { cout << "no k2 closing" << endl;}
+					}
 				}
-				//~ cout << "end pbl" << endl;
 			}
-			//~ pos = posi1;
-			
+			++posi;
 		}
+		cout << "read " << r << endl;
+		for (uint s : signatures){
+			cout << s;
+		}
+		cout << endl;
 	}
 }
 
 
 int main(int argc, char **argv){
-	//~ vector<string> vectSequences({"AGGTTTAATCTG","AGGTTGGGGTAACTG","AGGTTTAACTG","AGGTTTACT","AGGTTTAACTG"}); //todo: kmers du debut et de la fin...
 	vector<string> ref({"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-	 "TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC"});
-
-
-
-
+	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC"});
 	
-	
-	vector<string> vectSequences({			"TATTCTTTTCTAGATATATTTTATTTGTATCACTGAGTTTTTTTTCAAGGCCCATTTGCGGATCTCTGTTTTTATTCGATACCTTAGCTCTACGACCACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATTGGCTTGACAGGACCCATAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGTGGCATTTCTATGTTCCTCAGCTGATCAAAACCTGTGGAAATGCCAGACTTGTGCAAGAAATACAGTAGCACGAGATGTTAATGCCAGAACTCCTGTGAGAGTGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-
-	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-
-	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-
+	vector<string> vectSequences({			"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACTTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	
 
-	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-
-	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-
-	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-	"TATTCTTTTCTAGATATATTTTTTTGTACACTGAGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
+	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
+	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
+	
 
 	});
-
-	//~ for (string s : vectSequences){
-		//~ if (ref == s){
-			//~ cout << "ok" << endl;
-		//~ } else {
-			//~ cout << "pas ok" << endl;
-		//~ }
-	//~ }
-	uint s(0);
-	while ( s < 5){
-		if (ref[0] == vectSequences[s]){
-			cout << "ok" << endl;
-		} else {
-			cout << "pas ok" << endl;
-		}
-		++s;
-	}
-	while( s < vectSequences.size()){
-		if (ref[1] == vectSequences[s]){
-			cout << "ok" << endl;
-		} else {
-			cout << "pas ok" << endl;
-		}
-		++s;
-	}
-	cout << "***************************************" << endl;
-	//pas de correction dans le stretch de T
-	
-	//todo: kmers du debut et de la fin...
-	//TODO: trouver une jonction quand le kmer est erroné...
 	unordered_map<string, vector<int>> kmerToSignature;
 	unordered_map<string, vector<pair<uint, uint>>> kmerToReadPosi;
 	unordered_map<uint, vector<uint>> readToErrorPosition;
 	uint k(9);
 	for (uint i(2); i < 3; ++i){
 		cout << i << endl;
-		//~ unordered_map<string, vector<int>> kmerToSignature;
 		fillSignatures(vectSequences, k, kmerToSignature);
-		//~ unordered_map<string, vector<pair<uint, uint>>> kmerToReadPosi;
-		//~ unordered_map<uint, vector<uint>> readToErrorPosition;
 		dispatchErrors(vectSequences, k, kmerToSignature, kmerToReadPosi, readToErrorPosition);
-		
-		//~ uint i(2);
-		correctErrors(vectSequences, readToErrorPosition, k, kmerToReadPosi,  i);
 	}
-		// TODO: update kmerToReadPosi with new ok kmers before computeExon
-		fillSignatures(vectSequences, k, kmerToSignature);
-		dispatchErrors(vectSequences, k, kmerToSignature, kmerToReadPosi, readToErrorPosition);
-		unordered_map<string, vector<string>> kmerToPrevious, kmerToNext;
-		followingKmers(vectSequences, k, kmerToReadPosi, kmerToPrevious, kmerToNext);
-		computeExons(vectSequences, k, kmerToReadPosi,  kmerToSignature,  kmerToPrevious, kmerToNext);
-		// todo : garder les kmers des junctions et les positions, faire un consensus de la position de jonction
 
-		//~ correctErrors(vectSequences, readToErrorPosition, k, kmerToReadPosi,  i);
+	
+	unordered_set<string> branchingKmersLeft, branchingKmersRight;
+	followingKmers(vectSequences, k, kmerToReadPosi, branchingKmersLeft, branchingKmersRight);
+	//~ cout << "iiiiiiiiiiiiiii" << endl;
+	//~ for (string i : branchingKmersLeft){
+		//~ cout << i << endl;
 	//~ }
-	// une seconde passe après la correction pour des signatures plus propres => description des exons
-	s =0;
-	while ( s < 5){
-		if (ref[0] == vectSequences[s]){
-			cout << "ok" << endl;
-		} else {
-			cout << "pas ok" << endl;
-		}
-		++s;
-	}
-	while( s < vectSequences.size()){
-		if (ref[1] == vectSequences[s]){
-			cout << "ok" << endl;
-		} else {
-			cout << "pas ok" << endl;
-		}
-		++s;
-	}
+	//~ cout << "iiiiiiiiiiiiiii" << endl;
+	//~ for (string i : branchingKmersRight){
+		//~ cout << i << endl;
+	//~ }
+	//~ cout << "iiiiiiiiiiiiiii" << endl;
+	computeExons(vectSequences, k, kmerToReadPosi,  kmerToSignature,  branchingKmersLeft, branchingKmersRight);
 	return 0;
 }
+
+
+
+
+
