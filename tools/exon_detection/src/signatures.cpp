@@ -282,7 +282,6 @@ unordered_set<int> getZeros(vector<int>& sum){
 	for (uint i(0); i < sum.size(); ++i){
 		if (sum[i] == 0){
 			result.insert(i);
-			//~ cout << "zero at position " << i << endl;
 		}
 	}
 	return result;
@@ -290,34 +289,17 @@ unordered_set<int> getZeros(vector<int>& sum){
 
 
 unordered_set<int> zerosOfInterval(vector<string>& vectSequences, uint read, vector<uint>& positionsVec, uint k, unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi,  unordered_map<string, vector<int>>& kmerToSignature){
-	//~ uint posi(position1 + 1), nbKmers(0);
 	uint posi(1), nbKmers(0);
 	unordered_set<int> result;
 	string kmer;
 	vector<int> profile, sum;
-	//~ for (uint i(0); i < positionsVec.size(); ++i){
-		//~ cout << "gg "<<i << endl;
-	//~ }
-	//~ cout << positionsVec.size() << endl;
-	//~ cout << "summed " << endl;
 	kmer = vectSequences[read].substr(positionsVec[0], k);
 	sum =  kmerToSignature[kmer];
 	while (posi < positionsVec.size()){ //TODO : maybe less than k -1 ?
 		kmer = vectSequences[read].substr(positionsVec[posi], k);
 		if (kmerToReadPosi.count(kmer)){
 			profile = kmerToSignature[kmer];
-			//~ cout << "SUM" << endl; 
-			//~ for (uint i : sum){
-				//~ cout << i;
-			//~ }
-			
-			//~ cout << endl;
 			sum = sumOfProfiles(profile, sum);
-			//~ cout << "SUM" << endl; 
-			//~ for (uint i : sum){
-				//~ cout << i;
-			//~ }
-			//~ cout << endl;
 			++nbKmers;
 		}
 		++posi;
@@ -361,14 +343,13 @@ void propagateSignature(vector<uint>& signatures, uint position1, uint position2
 
 
 void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi,  unordered_map<string, vector<int>>& kmerToSignature, unordered_set<string>& kmerLeft, unordered_set<string>& kmerRight){
-	uint posi, posiPrec, posiNext, posiPrev, lastJunction, lastSignature;
-	string kmer1, kmer2, currentKmer, lastTrueKmer("");
-	bool found, foundk2, confirmed, confirmed2;
-	//~ vector<int> profile1, profile2;
+	uint posi, posiNext, posiPrev,lastSignature;
+	string kmer1, kmer2, lastTrueKmer("");
+	bool found, foundk2, confirmed;
 	unordered_set<int> zerosInPrec, zerosInNext;
 	for (uint r(0); r < vectSequences.size(); ++r){
 		cout << r << endl;
-		posi = k - 1; lastJunction = 0;  lastSignature = 0; confirmed = false;
+		posi = k - 1;  lastSignature = 0; confirmed = false;
 		vector<uint> signatures(vectSequences[r].size(), 0);
 		while (posi < vectSequences[r].size() - k - 1){
 			vector<int> sum, sum2;
@@ -404,7 +385,6 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 					bool foundk2 = false;
 					if (gotNE2 != kmerToReadPosi.end()){
 						foundk2	= true;
-						cout << "k2 opening ok" << endl;
 					}
 					if (not foundk2){
 						while (posiNext < posi + 1 +  k + SIZE_INSERTION){ // TODO : is it a good interval for the research
@@ -413,7 +393,6 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 							auto gotNE2 = kmerToReadPosi.find(kmer2);
 							if ( gotNE2 != kmerToReadPosi.end() ){
 								foundk2 = true;
-								cout << "new k2 opening ok" << endl;
 								break;
 							}
 						}
@@ -424,13 +403,11 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 						if (posiNext < posi + k){
 							vpositionsR = positionsRight(posi + 1 , k); // k2 not too far from k1 (still a junction kmer) // filled with k-1 positions
 						} else {
-							//~ cout << "R error " << posiNext << " " << vectSequences[r].substr(posiNext, k) << " " << vectSequences[r].substr(posiNext + k -1 - 1, k) << endl;
 							vpositionsR = positionsRight(posiNext, k); // in case there are errors and k2 away from k1, not a junction kmer /!\ WARNING: not sure to detect the junction in this case, because we compare the signatures of 2 exons that might be used in the same quantity in the data set 
 						}
 						vector<uint> vpositionsL = positionsLeft(posi, k); // filled with k-1 positions
 						unordered_set<int> zerosOfIntervalR,  zerosOfIntervalL;
 						if (not vpositionsR.empty() and not vpositionsL.empty()){
-							//~ cout << "oui" << endl;
 							zerosOfIntervalR = zerosOfInterval(vectSequences, r, vpositionsR, k, kmerToReadPosi, kmerToSignature);
 							zerosOfIntervalL =  zerosOfInterval(vectSequences, r, vpositionsL, k, kmerToReadPosi, kmerToSignature);
 							if (zerosOfIntervalL != zerosOfIntervalR){
@@ -442,7 +419,6 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 						}
 						cout << kmer1 << " " << kmer2 << endl;
 					} // else we can't do nothing, there are too many errors after kmer1
-					else { cout << "no k2 opening" << endl;}
 				} else {
 					auto got1 = kmerLeft.find(kmer1);
 					if (got1 != kmerLeft.end()){
@@ -454,7 +430,6 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 						bool foundk2 = false;
 						if (gotNE2 != kmerToReadPosi.end()){
 							foundk2	= true;
-							cout << "k2 closing ok" << endl;
 						}
 						if (not foundk2){
 							while (posiPrev > posi - 1 - k - SIZE_INSERTION){
@@ -463,17 +438,16 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 								auto gotNE2 = kmerToReadPosi.find(kmer2);
 								if ( gotNE2 != kmerToReadPosi.end() ){
 									foundk2 = true;
-									cout << "new k2 closing ok" << endl;
 									break;
 								}
 							}
 						}
 						if (foundk2){ // a valid previous kmer has been found /!\ sometimes the sequencing error re-creates a kmer present elsewhere and we are misled
 							vector<uint> vpositionsL;
-							if (posiNext < posi + k){
+							if (posiPrev > posi - k){
 								vpositionsL = positionsLeft(posi - 1 , k); // k2 not too far from k1 (still a junction kmer) // filled with k-1 positions
 							} else {
-								vpositionsL = positionsLeft(posiNext, k); // in case there are errors and k2 away from k1, not a junction kmer /!\ WARNING: not sure to detect the junction in this case, because we compare the signatures of 2 exons that might be used in the same quantity in the data set 
+								vpositionsL = positionsLeft(posiPrev, k); // in case there are errors and k2 away from k1, not a junction kmer /!\ WARNING: not sure to detect the junction in this case, because we compare the signatures of 2 exons that might be used in the same quantity in the data set 
 							}
 							vector<uint> vpositionsR = positionsRight(posi, k); // filled with k-1 positions
 							unordered_set<int> zerosOfIntervalR,  zerosOfIntervalL;
@@ -487,18 +461,16 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 									confirmed = true;
 								}
 							}
-							cout << kmer2 << " " << kmer1 << endl;
 						} // else we can't do nothing, there are too many errors after kmer1
-						else { cout << "no k2 closing" << endl;}
 					}
 				}
 			}
-			if (confirmed){
-				posi += k;
-				confirmed = false;
-			} else {
+			//~ if (confirmed){   //// NON : épissage complexe : on peut avoir 2 jonctions à 1 nt d'intervalle
+				//~ posi += k;
+				//~ confirmed = false;
+			//~ } else {
 				++posi;
-			}
+			//~ }
 		}
 		cout << "read " << r << endl;
 		for (uint s : signatures){
