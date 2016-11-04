@@ -347,6 +347,18 @@ vector<uint> positionsLeft(uint start, uint k){
 
 
 
+void propagateSignature(vector<uint>& signatures, uint position1, uint position2){
+	uint lastSign;
+	if (position1 == 0){
+		lastSign = 1;
+	} else {
+		lastSign = signatures[position1 - 1] + 1;
+	}
+	for (uint i(position1); i < position2; ++i){
+		signatures[i] = lastSign;
+	}
+}
+
 
 void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, vector<pair<uint, uint>>>& kmerToReadPosi,  unordered_map<string, vector<int>>& kmerToSignature, unordered_set<string>& kmerLeft, unordered_set<string>& kmerRight){
 	uint posi, posiPrec, posiNext, posiPrev, lastJunction, lastSignature;
@@ -357,11 +369,11 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 	for (uint r(0); r < vectSequences.size(); ++r){
 		cout << r << endl;
 		posi = k - 1; lastJunction = 0;  lastSignature = 0; confirmed = false;
-		vector <uint> signatures(vectSequences[r].size(), 0);
+		vector<uint> signatures(vectSequences[r].size(), 0);
 		while (posi < vectSequences[r].size() - k - 1){
 			vector<int> sum, sum2;
 			found = false;
-			//// chunk 1: try and find a first branching k-mer k1 ////
+			//// *** CHUNK 1: try and find a first branching k-mer k1 ////
 			kmer1 = vectSequences[r].substr(posi, k);
 			auto gotNE(kmerToReadPosi.find(kmer1));
 			if (gotNE != kmerToReadPosi.end()){ // errorless kmer1
@@ -379,41 +391,11 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 						kmer1 = ""; // we found nothing we will just continue
 					}
 				}
-
-				//~ if (not lastTrueKmer.empty()){
-					//~ uint newPosi(posi + 1);
-					//~ string kmer1p = vectSequences[r].substr(newPosi, k);
-					//~ auto gotNEk1(kmerToReadPosi.find(kmer1p));
-					//~ bool foundk1 = false;
-					//~ if (gotNEk1 != kmerToReadPosi.end()){
-						//~ foundk1	= true;
-					//~ }
-					//~ if (not foundk1){ // try to find a close errorless kmer k1
-						
-						//~ while (newPosi < posi + 1 + k + SIZE_INSERTION){
-							//~ ++newPosi;
-							//~ kmer1p = vectSequences[r].substr(newPosi, k);
-							//~ gotNEk1 = kmerToReadPosi.find(kmer1p);
-							//~ if ( gotNEk1 != kmerToReadPosi.end() ){
-								//~ foundk1 = true;
-								//~ break;
-							//~ }
-						//~ }
-					//~ }
-					//~ if (foundk1){ // a valid next kmer has been found /!\ sometimes the sequencing error re-creates a kmer present elsewhere and we are misled
-						//~ cout << kmer1p << " " << kmer1 << endl;
-						//~ kmer1 = kmer1p;
-						//~ posi = newPosi;
-						//~ lastTrueKmer = kmer1p;
-					//~ } else {
-						//~ kmer1 = "";
-					//~ }
-				//~ }
 			}
-			//// chunk 2: if a branching k-mer k1 is found, try to find a know neighbour k2 ////
+			//// *** CHUNK 2: if a branching k-mer k1 is found, try to find a know neighbour k2 ////
 			if (not kmer1.empty()){ // else we were unable to find a kmer1 without error, we continue
 				auto got1(kmerRight.find(kmer1));
-				//// beginning of alternative exons (opening a bubble) ////
+				//// ** Beginning of alternative exons (opening a bubble) ////
 				if (got1 != kmerRight.end()){
 					// try and get an errorless kmer2
 					posiNext = posi + 1;
@@ -425,7 +407,7 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 						cout << "k2 opening ok" << endl;
 					}
 					if (not foundk2){
-						while (posiNext < posi + 1 + 2 * k + SIZE_INSERTION){
+						while (posiNext < posi + 1 +  k + SIZE_INSERTION){ // TODO : is it a good interval for the research
 							++posiNext;
 							kmer2 = vectSequences[r].substr(posiNext, k);
 							auto gotNE2 = kmerToReadPosi.find(kmer2);
@@ -453,6 +435,9 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 							zerosOfIntervalL =  zerosOfInterval(vectSequences, r, vpositionsL, k, kmerToReadPosi, kmerToSignature);
 							if (zerosOfIntervalL != zerosOfIntervalR){
 								cout << "junction !! at position "  << posi + k - 1 << " (after kmer "<< kmer1  <<")" <<endl;
+								propagateSignature(signatures, lastSignature, posi + k);
+								lastSignature = posi + k;
+								confirmed = true;
 							}
 						}
 						cout << kmer1 << " " << kmer2 << endl;
@@ -461,7 +446,8 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 				} else {
 					auto got1 = kmerLeft.find(kmer1);
 					if (got1 != kmerLeft.end()){
-						//// end of alternative exons (closing a bubble) ////
+						//// ** End of alternative exons (closing a bubble) ////
+						// try and get an errorless kmer2 which is a previous kmer
 						posiPrev = posi - 1;
 						kmer2 = vectSequences[r].substr(posiPrev, k);
 						auto gotNE2(kmerToReadPosi.find(kmer2));
@@ -482,15 +468,37 @@ void computeExons(vector<string>& vectSequences, uint k,  unordered_map<string, 
 								}
 							}
 						}
-						if (foundk2){ // a valid next kmer has been found /!\ sometimes the sequencing error re-creates a kmer present elsewhere and we are misled
+						if (foundk2){ // a valid previous kmer has been found /!\ sometimes the sequencing error re-creates a kmer present elsewhere and we are misled
+							vector<uint> vpositionsL;
+							if (posiNext < posi + k){
+								vpositionsL = positionsLeft(posi - 1 , k); // k2 not too far from k1 (still a junction kmer) // filled with k-1 positions
+							} else {
+								vpositionsL = positionsLeft(posiNext, k); // in case there are errors and k2 away from k1, not a junction kmer /!\ WARNING: not sure to detect the junction in this case, because we compare the signatures of 2 exons that might be used in the same quantity in the data set 
+							}
+							vector<uint> vpositionsR = positionsRight(posi, k); // filled with k-1 positions
+							unordered_set<int> zerosOfIntervalR,  zerosOfIntervalL;
+							if (not vpositionsR.empty() and not vpositionsL.empty()){
+								zerosOfIntervalR = zerosOfInterval(vectSequences, r, vpositionsR, k, kmerToReadPosi, kmerToSignature);
+								zerosOfIntervalL =  zerosOfInterval(vectSequences, r, vpositionsL, k, kmerToReadPosi, kmerToSignature);
+								if (zerosOfIntervalL != zerosOfIntervalR){
+									cout << "junction !! at position "  << posi << " (before kmer "<< kmer1  <<")" <<endl;
+									propagateSignature(signatures, lastSignature, posi);
+									lastSignature = posi;
+									confirmed = true;
+								}
+							}
 							cout << kmer2 << " " << kmer1 << endl;
-							lastTrueKmer = kmer2;
 						} // else we can't do nothing, there are too many errors after kmer1
 						else { cout << "no k2 closing" << endl;}
 					}
 				}
 			}
-			++posi;
+			if (confirmed){
+				posi += k;
+				confirmed = false;
+			} else {
+				++posi;
+			}
 		}
 		cout << "read " << r << endl;
 		for (uint s : signatures){
@@ -505,13 +513,13 @@ int main(int argc, char **argv){
 	vector<string> ref({"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC"});
 	
-	vector<string> vectSequences({			"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACTTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
+	vector<string> vectSequences({			"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACTTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC","TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATCCCTTAGCTCTACGACACTCAATATCCAGCGGTAGTTTACCATTTGCCAGCAGGTTTTGGAATGGCTTGACAGGACCCAAAGTGTGGGATCTGTCTTGCCCAGTATCTGGATATTGTGGGTCATGTATCGAAATCATTTGCTGAGCAGAAGATGGATTTCTATGTTCCTCGCTGATCAAAACCTGTGGAAATGCCAGACTTGTCGCAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	
 
 	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
-	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACAAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
+	"TATTCTTTTCTAGATATATTTTTTTGTACACTGGTTTTTTTTCAACATTTGCGGACTCTGTTTTTATTCGATACTAGAAATACAGTAGCACGAGATGTTTGCCAGAACTCCTGTGAGAGGACAGAATCTGGCGGAATAAATAAAACTGGAAACCCC",
 	
 
 	});
