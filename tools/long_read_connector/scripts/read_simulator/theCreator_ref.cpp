@@ -164,8 +164,14 @@ vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile
 
 
 unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numberReads){
-	uint nbMidExpressed(referencesNumber * 0.6); // code 1
-	uint nbHighlyExpressed(referencesNumber * 0.1+1); // code 0
+	uint nbMidExpressed, nbHighlyExpressed;
+	if (referencesNumber > 1){
+		nbMidExpressed = referencesNumber * 0.6; // code 1
+		nbHighlyExpressed = referencesNumber * 0.1+1; // code 0
+	} else {
+		nbMidExpressed = 0;
+		nbHighlyExpressed = 1;
+	}
 
 	
 	
@@ -181,13 +187,13 @@ unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numbe
 			j = refs.erase(j);
 			++i;
 	}
-	i = 0;
-	for (auto j (refs.begin()); j != refs.end(), i < nbMidExpressed;){
+	//~ i = 0;
+	for (auto j (refs.begin()); j != refs.end(), i < nbMidExpressed + nbHighlyExpressed;){
 			result.insert({*j, 1});
 			j = refs.erase(j);
 			++i;
 	}
-	cout << "check size " << refs.size();
+	//~ cout << "check size " << refs.size();
 	for (auto j (refs.begin()); j != refs.end(); ++j){
 			
 			result.insert({*j, 2});
@@ -202,12 +208,16 @@ void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=1, c
 	ofstream outRef(outRefFileName);
 	vector<vector<string>> referenceList(generateAlternativeTranscriptReferences(inRef, referencesNumber));
 
-	int highly(numberReads);
-	int regular(0);
-	int rare(0);
-	//~ int highly(numberReads*0.5);
-	//~ int regular(numberReads*0.4);
-	//~ int rare(numberReads - highly - regular);
+	int highly, regular, rare;
+	if (referencesNumber >1){
+		highly = numberReads*0.5;
+		regular = numberReads*0.4;
+		rare= numberReads - highly - regular;
+	} else {
+		highly = numberReads;
+		regular = 0;
+		rare = 0;
+	}
 	
 	
 	unordered_map<uint, uint> geneExpression(geneExpressionChunks(referencesNumber, numberReads));
@@ -234,7 +244,6 @@ void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=1, c
 	}
 	
 	string refRead,realRead;
-
 	int hi(0), re(0), ra(0);
 	while (hi < highly or re < regular or ra < rare){
 		uint dice1(rand() % referencesNumber);
@@ -275,7 +284,7 @@ int main(int argc, char ** argv){
 		ifstream refFile(refName);
 		srand (time(NULL));
 		auto startChrono = chrono::system_clock::now();
-		generateReads(50, refFile);
+		generateReads(100, refFile);
 		auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 		cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
 	}
