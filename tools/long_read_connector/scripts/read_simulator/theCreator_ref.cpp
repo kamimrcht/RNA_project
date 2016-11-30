@@ -55,9 +55,18 @@ string randomSequence(const uint length){
 }
 
 
+void insertion(uint rate, string& result){
+	uint dice(rand() % 100);
+	if(dice < rate){
+		char newNucleotide(randomNucleotide());
+		result.push_back(newNucleotide);
+		insertion(rate, result);
+	}
+}
 
-//~ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
+
 string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
+//~ string mutateSequence(const string& referenceSequence, uint maxMutRate=3, vector <double> ratioMutation={0.06,0.73,0.21}){
 	string result;
 	result.reserve(5 * referenceSequence.size());
 	for(uint i(0); i < referenceSequence.size(); ++i){
@@ -67,7 +76,26 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 		double insertionRate(mutRate * ratioMutation[1]);
 		double deletionRate(mutRate * ratioMutation[2]);
 		uint dice(rand() % 100);
-		if(dice<substitutionRate){
+
+
+		if(dice < deletionRate + substitutionRate + insertionRate){
+			//INSERTION
+			char newNucleotide(randomNucleotide());
+			result.push_back(referenceSequence[i]);
+			result.push_back(newNucleotide);
+			//~ --i;
+			insertion(deletionRate + substitutionRate + insertionRate, result); // larger than 1 insertions
+			
+			continue;
+		} else if(dice < deletionRate+substitutionRate){
+			//DELETION
+			uint dice2(rand() % 100);
+			while (dice2 < deletionRate+substitutionRate){ // deletions larger than 1
+				++i;
+				dice2 = rand() % 100;
+			}
+			continue;
+		} else if(dice<substitutionRate){
 			//SUBSTITUTION
 			char newNucleotide(randomNucleotide());
 			while(newNucleotide == referenceSequence[i]){
@@ -75,30 +103,17 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 			}
 			result.push_back(newNucleotide);
 			continue;
-		}
-		if(dice < deletionRate+substitutionRate){
-			//DELETION
-			
-			continue;
-		}
-		if(dice < deletionRate + substitutionRate + insertionRate){
-			//INSERTION
-			char newNucleotide(randomNucleotide());
-			result.push_back(newNucleotide);
-			--i;
-			continue;
-		}
+		} else {
 		//NO ERROR
-		result.push_back(referenceSequence[i]);
-		
+			result.push_back(referenceSequence[i]);
+		}
+
 	}
 	return result;
 }
 
-
-
 //~ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
-vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=14, uint exonNumber=8, uint sizeExons=100){
+vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=14, uint exonNumber=10, uint sizeExons=200){
 	string sequence;
 	vector<vector<string>> result;
 	uint nbRef(0);
@@ -182,14 +197,17 @@ unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numbe
 
 
 
-void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=25, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
+void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=1, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(outRefFileName);
 	vector<vector<string>> referenceList(generateAlternativeTranscriptReferences(inRef, referencesNumber));
 
-	int highly(numberReads*0.5);
-	int regular(numberReads*0.4);
-	int rare(numberReads - highly - regular);
+	int highly(numberReads);
+	int regular(0);
+	int rare(0);
+	//~ int highly(numberReads*0.5);
+	//~ int regular(numberReads*0.4);
+	//~ int rare(numberReads - highly - regular);
 	
 	
 	unordered_map<uint, uint> geneExpression(geneExpressionChunks(referencesNumber, numberReads));
@@ -257,7 +275,7 @@ int main(int argc, char ** argv){
 		ifstream refFile(refName);
 		srand (time(NULL));
 		auto startChrono = chrono::system_clock::now();
-		generateReads(100000, refFile);
+		generateReads(50, refFile);
 		auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 		cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
 	}

@@ -55,6 +55,15 @@ string randomSequence(const uint length){
 }
 
 
+void insertion(uint rate, string& result){
+	uint dice(rand() % 100);
+	if(dice < rate){
+		char newNucleotide(randomNucleotide());
+		result.push_back(newNucleotide);
+		insertion(rate, result);
+	}
+}
+
 
 string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
 //~ string mutateSequence(const string& referenceSequence, uint maxMutRate=3, vector <double> ratioMutation={0.06,0.73,0.21}){
@@ -67,7 +76,26 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 		double insertionRate(mutRate * ratioMutation[1]);
 		double deletionRate(mutRate * ratioMutation[2]);
 		uint dice(rand() % 100);
-		if(dice<substitutionRate){
+
+
+		if(dice < deletionRate + substitutionRate + insertionRate){
+			//INSERTION
+			char newNucleotide(randomNucleotide());
+			result.push_back(referenceSequence[i]);
+			result.push_back(newNucleotide);
+			//~ --i;
+			insertion(deletionRate + substitutionRate + insertionRate, result); // larger than 1 insertions
+			
+			continue;
+		} else if(dice < deletionRate+substitutionRate){
+			//DELETION
+			uint dice2(rand() % 100);
+			while (dice2 < deletionRate+substitutionRate){ // deletions larger than 1
+				++i;
+				dice2 = rand() % 100;
+			}
+			continue;
+		} else if(dice<substitutionRate){
 			//SUBSTITUTION
 			char newNucleotide(randomNucleotide());
 			while(newNucleotide == referenceSequence[i]){
@@ -75,21 +103,10 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 			}
 			result.push_back(newNucleotide);
 			continue;
-		}
-		if(dice < deletionRate+substitutionRate){
-			//DELETION
-
-			continue;
-		}
-		if(dice < deletionRate + substitutionRate + insertionRate){
-			//INSERTION
-			char newNucleotide(randomNucleotide());
-			result.push_back(newNucleotide);
-			--i;
-			continue;
-		}
+		} else {
 		//NO ERROR
-		result.push_back(referenceSequence[i]);
+			result.push_back(referenceSequence[i]);
+		}
 
 	}
 	return result;
@@ -97,8 +114,8 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 
 
 
-vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=8, uint sizeExons=100){
-//~ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
+vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=1, uint totalExonNumber=1, uint exonNumber=1, uint sizeExons=200){
+
 	vector<string> result;
 	vector<string> exonList;
 	for(uint i(0); i < totalExonNumber; ++i){
@@ -107,19 +124,29 @@ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, 
 	string transcript;
 	transcript.reserve(exonNumber*sizeExons);
 	unordered_set<uint> selectedExons;
+	uint dice1, transcriptExonNumber;
 	for(uint i(0); i < transcriptNumber; ++i){
-		uint dice1(rand() % (totalExonNumber-3));
-		uint transcriptExonNumber(dice1 + 3);
-		//~ cout << transcriptExonNumber << endl;
+		if (transcriptNumber > 1){
+			dice1 = (rand() % (totalExonNumber-3));
+			transcriptExonNumber = (dice1 + 3);
+		} else {
+			transcriptExonNumber = 0;
+		}
+		cout << transcriptExonNumber << endl;
 		transcript = "";
 		selectedExons = {};
-		while(selectedExons.size() != transcriptExonNumber){
-			selectedExons.insert(rand() % totalExonNumber);
+		if (transcriptExonNumber > 0){
+			while(selectedExons.size() != transcriptExonNumber){
+				selectedExons.insert(rand() % totalExonNumber);
+			}
+		} else {
+			selectedExons.insert(0);
 		}
 		for(uint ii(0); ii < totalExonNumber; ++ii){
 			if(selectedExons.count(ii) == 1){
 				transcript += exonList[ii];
 			}
+			
 		}
 		result.push_back(transcript);
 	}
@@ -129,14 +156,14 @@ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, 
 
 
 
-void generateReads(uint numberReads, uint referencesNumber=2, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
+void generateReads(uint numberReads, uint referencesNumber=1, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(refFileName);
 	vector<vector<string>> referenceList;
 	for(uint i(0);i < referencesNumber; ++i){
 		referenceList.push_back(generateAlternativeTranscriptReferences());
 		for(uint ii(0); ii<referenceList[i].size(); ++ii){
-			outRef << ">referenceNumber:" << i << " alternativeNumber" << ii << endl;
+			outRef << ">referenceNumber:" << i << " alternativeNumber" << ii << " length"<< referenceList[i][ii].size() << endl;
 			outRef << referenceList[i][ii] << endl;
 		}
 	}
@@ -147,7 +174,7 @@ void generateReads(uint numberReads, uint referencesNumber=2, const string& outF
 		uint dice2(rand() % referenceList[dice1].size());
 		refRead = referenceList[dice1][dice2];
 		realRead = mutateSequence(refRead);
-		out << ">referenceNumber:" << dice1 << " alternativeNumber" << dice2 << endl;
+		out << ">referenceNumber:" << dice1 << " alternativeNumber" << dice2 << " length" << realRead.size() << endl;
 		out << realRead << endl;
 	}
 }
@@ -157,7 +184,7 @@ void generateReads(uint numberReads, uint referencesNumber=2, const string& outF
 int main(int argc, char ** argv){
 	srand (time(NULL));
 	auto startChrono = chrono::system_clock::now();
-	generateReads(10);
+	generateReads(100);
 	auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 	cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
 	return 0;
