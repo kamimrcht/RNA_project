@@ -55,7 +55,7 @@ string randomSequence(const uint length){
 }
 
 
-void insertion(uint rate, string& result){
+void insertion(double rate, string& result){
 	uint dice(rand() % 100);
 	if(dice < rate){
 		char newNucleotide(randomNucleotide());
@@ -65,7 +65,7 @@ void insertion(uint rate, string& result){
 }
 
 
-string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector <double> ratioMutation={0.06,0.73,0.21}){
+string mutateSequence(const string& referenceSequence, uint maxMutRate=0, vector <double> ratioMutation={0.06,0.73,0.21}){
 //~ string mutateSequence(const string& referenceSequence, uint maxMutRate=3, vector <double> ratioMutation={0.06,0.73,0.21}){
 	string result;
 	result.reserve(5 * referenceSequence.size());
@@ -78,14 +78,13 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 		uint dice(rand() % 100);
 
 
-		if(dice < deletionRate + substitutionRate + insertionRate){
-			//INSERTION
+		if (dice <substitutionRate ){
+			//SUBSTITUTION
 			char newNucleotide(randomNucleotide());
-			result.push_back(referenceSequence[i]);
+			while(newNucleotide == referenceSequence[i]){
+				newNucleotide = randomNucleotide();
+			}
 			result.push_back(newNucleotide);
-			//~ --i;
-			insertion(deletionRate + substitutionRate + insertionRate, result); // larger than 1 insertions
-			
 			continue;
 		} else if(dice < deletionRate+substitutionRate){
 			//DELETION
@@ -95,13 +94,14 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=6, vector
 				dice2 = rand() % 100;
 			}
 			continue;
-		} else if(dice<substitutionRate){
-			//SUBSTITUTION
+		} else if (dice < deletionRate + substitutionRate + insertionRate){
+			//INSERTION
 			char newNucleotide(randomNucleotide());
-			while(newNucleotide == referenceSequence[i]){
-				newNucleotide = randomNucleotide();
-			}
+			result.push_back(referenceSequence[i]);
 			result.push_back(newNucleotide);
+			//~ --i;
+			insertion(deletionRate + substitutionRate + insertionRate, result); // larger than 1 insertions
+			
 			continue;
 		} else {
 		//NO ERROR
