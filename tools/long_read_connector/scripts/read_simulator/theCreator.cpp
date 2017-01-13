@@ -132,7 +132,6 @@ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, 
 		} else {
 			transcriptExonNumber = 0;
 		}
-		cout << transcriptExonNumber << endl;
 		transcript = "";
 		selectedExons = {};
 		if (transcriptExonNumber > 0){

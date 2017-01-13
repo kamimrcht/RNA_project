@@ -1,49 +1,29 @@
-# CC=/usr/bin/g++
-CC=g++
-#~ CC=clang++
-CFLAGS=  -Wall  -Ofast -std=c++11 -march=native -flto -pipe -funit-at-a-time -fomit-frame-pointer   -Wfatal-errors
-LDFLAGS=-flto -lpthread
+.PHONY: all clean
 
+CC=/usr/bin/g++
+
+CFLAGS=  -Wall  -Ofast -std=c++11 -march=native -pthread -fmax-errors=3 -flto -pipe
+LDFLAGS=-pthread
 
 ifeq ($(gprof),1)
-CFLAGS=-std=c++0x -pg -O4   -march=native
+CFLAGS=-std=c++0x -pg -O3  -march=native
 LDFLAGS=-pg
 endif
 
 ifeq ($(valgrind),1)
-CFLAGS=-std=c++0x -O4 -g
+CFLAGS=-std=c++0x -O3 -g
 LDFLAGS=-g
 endif
 
+SRCS = $(wildcard *.cpp)
+OBJS = $(patsubst %.cpp,%,$(SRCS))
 
-
-EXEC=TheCreator
-
-all: $(EXEC)
-
-
-TheCreator: theCreator.o  
-	$(CC) -o $@ $^ $(LDFLAGS)
-	
-theCreator.o: theCreator.cpp  
-	$(CC) -o $@ -c $< $(CFLAGS)
-
-
-EXEC=TheCreatorRef
-
-all: $(EXEC)
-
-
-TheCreatorRef: theCreator_ref.o  
-	$(CC) -o $@ $^ $(LDFLAGS)
-	
-theCreator_ref.o: theCreator_ref.cpp  
-	$(CC) -o $@ -c $< $(CFLAGS)
-
+all: $(OBJS)
 
 clean:
-	rm -rf *.o
-	rm -rf $(EXEC)
+	rm -fv $(OBJS)
 
+rebuild: clean $(OBJS)
 
-rebuild: clean $(EXEC)
+%: %.cpp
+	$(CC) $(CFLAGS) $^ -o $@  $(LDFLAGS)
