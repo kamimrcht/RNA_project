@@ -65,7 +65,7 @@ void insertion(uint rate, string& result){
 }
 
 
-string mutateSequence(const string& referenceSequence, uint maxMutRate=0, vector <double> ratioMutation={0.06,0.73,0.21}){
+string mutateSequence(const string& referenceSequence, uint maxMutRate, vector <double> ratioMutation={0.06,0.73,0.21}){
 //~ string mutateSequence(const string& referenceSequence, uint maxMutRate=3, vector <double> ratioMutation={0.06,0.73,0.21}){
 	string result;
 	result.reserve(5 * referenceSequence.size());
@@ -114,7 +114,7 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=0, vector
 
 
 
-vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=1, uint totalExonNumber=1, uint exonNumber=1, uint sizeExons=200){
+vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=12, uint sizeExons=200){
 
 	vector<string> result;
 	vector<string> exonList;
@@ -156,7 +156,7 @@ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=1, 
 
 
 
-void generateReads(uint numberReads, uint referencesNumber=1, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
+void generateReads(uint numberReads, uint mutRate, uint referencesNumber, const string& outFileName="simulatedReads.fa", const string& refFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(refFileName);
 	vector<vector<string>> referenceList;
@@ -173,7 +173,7 @@ void generateReads(uint numberReads, uint referencesNumber=1, const string& outF
 		uint dice1(rand() % referencesNumber);
 		uint dice2(rand() % referenceList[dice1].size());
 		refRead = referenceList[dice1][dice2];
-		realRead = mutateSequence(refRead);
+		realRead = mutateSequence(refRead, mutRate);
 		out << ">referenceNumber:" << dice1 << " alternativeNumber" << dice2 << " length" << realRead.size() << endl;
 		out << realRead << endl;
 	}
@@ -183,9 +183,14 @@ void generateReads(uint numberReads, uint referencesNumber=1, const string& outF
 
 int main(int argc, char ** argv){
 	srand (time(NULL));
-	auto startChrono = chrono::system_clock::now();
-	generateReads(100);
-	auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
-	cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
+	if (argc > 3){
+		auto startChrono = chrono::system_clock::now();
+		uint nbReads(stoi(argv[1]));
+		uint mut(stoi(argv[2]));
+		uint genes(stoi(argv[3]));
+		generateReads(nbReads, mut, genes);
+		auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
+		cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
+	}
 	return 0;
 }
