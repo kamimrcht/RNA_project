@@ -173,7 +173,7 @@ void generateReads(uint numberReads, uint mutRate, uint referencesNumber, const 
 		uint dice2(rand() % referenceList[dice1].size());
 		refRead = referenceList[dice1][dice2];
 		realRead = mutateSequence(refRead, mutRate);
-		out << ">referenceNumber:" << dice1 << " alternativeNumber" << dice2 << " length" << realRead.size() << endl;
+		out << ">" << i + 1 << "_referenceNumber:" << dice1 << " alternativeNumber" << dice2 << " length" << realRead.size() << endl;
 		out << realRead << endl;
 	}
 }
