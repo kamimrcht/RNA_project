@@ -65,7 +65,7 @@ void insertion(double rate, string& result){
 }
 
 
-string mutateSequence(const string& referenceSequence, uint maxMutRate=0, vector <double> ratioMutation={0.06,0.73,0.21}){
+string mutateSequence(const string& referenceSequence, uint maxMutRate, vector <double> ratioMutation={0.06,0.73,0.21}){
 //~ string mutateSequence(const string& referenceSequence, uint maxMutRate=3, vector <double> ratioMutation={0.06,0.73,0.21}){
 	string result;
 	result.reserve(5 * referenceSequence.size());
@@ -113,7 +113,7 @@ string mutateSequence(const string& referenceSequence, uint maxMutRate=0, vector
 }
 
 //~ vector<string> generateAlternativeTranscriptReferences(uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=6, uint sizeExons=100){
-vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=14, uint exonNumber=10, uint sizeExons=200){
+vector<vector<string>> generateAlternativeTranscriptReferences(ifstream& refFile, uint referenceNumber, uint transcriptNumber=3, uint totalExonNumber=15, uint exonNumber=10, uint sizeExons=200){
 	string sequence;
 	vector<vector<string>> result;
 	uint nbRef(0);
@@ -203,7 +203,7 @@ unordered_map<uint, uint> geneExpressionChunks(uint referencesNumber, uint numbe
 
 
 
-void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=1, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
+void generateReads(uint numberReads, uint mutRate, uint referencesNumber, ifstream& inRef, const string& outFileName="simulatedReads.fa", const string& outRefFileName="RefFile"){
 	ofstream out(outFileName);
 	ofstream outRef(outRefFileName);
 	vector<vector<string>> referenceList(generateAlternativeTranscriptReferences(inRef, referencesNumber));
@@ -245,6 +245,7 @@ void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=1, c
 	
 	string refRead,realRead;
 	int hi(0), re(0), ra(0);
+	uint indexRead(1);
 	while (hi < highly or re < regular or ra < rare){
 		uint dice1(rand() % referencesNumber);
 		uint dice2(rand() % (referenceList[dice1].size() ));
@@ -253,25 +254,28 @@ void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=1, c
 			++hi;
 			string expression = "highExpression";
 			refRead = referenceList[dice1][dice2];
-			realRead = mutateSequence(refRead);
-			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
+			realRead = mutateSequence(refRead, mutRate);
+			out << ">" <<indexRead << "_referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
 			out << realRead << endl;
+			++indexRead;
 		}
 		if (expr == 1 and re < regular){
 			++re;
 			string expression = "regularExpression";
 			refRead = referenceList[dice1][dice2];
-			realRead = mutateSequence(refRead);
-			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
+			realRead = mutateSequence(refRead, mutRate);
+			out << ">" <<  indexRead << "_referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
 			out << realRead << endl;
+			++indexRead;
 		}
 		if (expr == 2 and ra < rare){
 			++ra;
 			string expression = "lowExpression";
 			refRead = referenceList[dice1][dice2];
-			realRead = mutateSequence(refRead);
-			out << ">referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
+			realRead = mutateSequence(refRead, mutRate);
+			out << ">" << indexRead << "_referenceNumber:" << dice1 << " alternativeNumber:" << dice2  << " " << expression << endl;
 			out << realRead << endl;
+			++indexRead;
 		}
 	}
 }
@@ -279,14 +283,19 @@ void generateReads(uint numberReads, ifstream& inRef, uint referencesNumber=1, c
 
 
 int main(int argc, char ** argv){
-	if (argc > 1){
+	if (argc > 4){
 		string refName = argv[1];
+		uint nbReads(stoi(argv[2]));
+		uint mut(stoi(argv[3]));
+		uint genes(stoi(argv[4]));
 		ifstream refFile(refName);
 		srand (time(NULL));
 		auto startChrono = chrono::system_clock::now();
-		generateReads(100, refFile);
+		generateReads(nbReads, mut, genes, refFile);
 		auto end = chrono::system_clock::now(); auto waitedFor = end - startChrono;
 		cout << "Time  in ms : " << (chrono::duration_cast<chrono::milliseconds>(waitedFor).count()) << endl;
+	} else {
+		cout << "usage: ./theCreator_ref <ref_file.fa> <number_of_reads> <mutation_rate> <number_of_genes>" << endl;
 	}
 	return 0;
 }
